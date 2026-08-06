@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/common/version-range.json",
+  "title": "Semantic Version Range",
+  "description": "A non-empty, single-line npm-compatible semantic version range. The grammar is enforced by semantic validation.",
+  "type": "string",
+  "minLength": 1,
+  "pattern": "^[^\\r\\n]+$"
+}

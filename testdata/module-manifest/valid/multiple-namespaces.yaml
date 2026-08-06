@@ -1,0 +1,16 @@
+$schema: https://schemas.montferret.dev/module-manifest/v1.json
+name: montferret/sqlite
+namespace: DB::SQLITE
+version: 1.1.0
+description: Provides SQLite database access across related namespaces.
+license: Apache-2.0
+documentation: https://docs.montferret.dev/modules/sqlite/
+exports:
+  namespaces:
+    - name: DB::SQLITE
+      functions:
+        - OPEN
+    - name: DB::SQLITE::TRANSACTION
+      functions:
+        - BEGIN
+        - COMMIT

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schemas.montferret.dev/module-manifest/v1.json",
+  "name": "montferret/sqlite",
+  "namespace": "DB::SQLITE",
+  "version": "1.0.0",
+  "description": "Provides SQLite exports for Ferret queries.",
+  "license": "Apache-2.0 WITH LLVM-exception",
+  "documentation": "https://docs.montferret.dev/modules/sqlite/",
+  "exports": {
+    "namespaces": [
+      {
+        "name": "DB::SQLITE",
+        "functions": ["OPEN", "EXECUTE"],
+        "types": ["Connection"],
+        "constants": ["VERSION"]
+      }
+    ],
+    "dialects": ["sql"]
+  }
+}

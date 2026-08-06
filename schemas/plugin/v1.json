@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/plugin-manifest/v1.json",
+  "$comment": "Reserved for a future Ferret Plugin Manifest specification. This placeholder deliberately rejects every document.",
+  "not": {}
+}

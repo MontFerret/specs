@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/common/identifier.json",
+  "title": "Ferret Distribution Identifier",
+  "description": "A lowercase owner/name coordinate used to identify a distributed Ferret module.",
+  "type": "string",
+  "pattern": "^[a-z0-9]([a-z0-9._-]*[a-z0-9])?/[a-z0-9]([a-z0-9._-]*[a-z0-9])?$"
+}

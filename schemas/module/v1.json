@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/module-manifest/v1.json",
+  "title": "Ferret Module Manifest v1",
+  "description": "The canonical manifest for a distributed Ferret module.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "name",
+    "namespace",
+    "version",
+    "description",
+    "license",
+    "documentation"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.ferretlang.org/module-manifest/v1.json"
+    },
+    "name": {
+      "$ref": "https://schemas.ferretlang.org/common/identifier.json"
+    },
+    "namespace": {
+      "$ref": "https://schemas.ferretlang.org/common/namespace.json"
+    },
+    "version": {
+      "$ref": "https://schemas.ferretlang.org/common/semver.json"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "license": {
+      "$ref": "https://schemas.ferretlang.org/common/spdx-license.json"
+    },
+    "authors": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/author"
+      }
+    },
+    "documentation": {
+      "$ref": "https://schemas.ferretlang.org/common/url.json"
+    },
+    "repository": {
+      "$ref": "https://schemas.ferretlang.org/common/url.json"
+    },
+    "links": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9._-]*$"
+      },
+      "additionalProperties": {
+        "$ref": "https://schemas.ferretlang.org/common/url.json"
+      }
+    },
+    "compatibility": {
+      "$ref": "#/$defs/compatibility"
+    },
+    "dependencies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/dependency"
+      }
+    },
+    "keywords": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "categories": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "exports": {
+      "$ref": "#/$defs/exports"
+    }
+  },
+  "$defs": {
+    "ferretIdentifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+    },
+    "author": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "url": {
+          "$ref": "https://schemas.ferretlang.org/common/url.json"
+        }
+      }
+    },
+    "compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ferret"],
+      "properties": {
+        "ferret": {
+          "$ref": "https://schemas.ferretlang.org/common/version-range.json"
+        }
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["module", "version"],
+      "properties": {
+        "module": {
+          "$ref": "https://schemas.ferretlang.org/common/identifier.json"
+        },
+        "version": {
+          "$ref": "https://schemas.ferretlang.org/common/version-range.json"
+        }
+      }
+    },
+    "exports": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "namespaces": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/namespaceExport"
+          }
+        },
+        "dialects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/ferretIdentifier"
+          }
+        }
+      }
+    },
+    "namespaceExport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "$ref": "https://schemas.ferretlang.org/common/namespace.json"
+        },
+        "functions": {
+          "$ref": "#/$defs/memberList"
+        },
+        "types": {
+          "$ref": "#/$defs/memberList"
+        },
+        "constants": {
+          "$ref": "#/$defs/memberList"
+        }
+      }
+    },
+    "memberList": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/ferretIdentifier"
+      }
+    }
+  }
+}

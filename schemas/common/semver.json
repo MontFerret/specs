@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/common/semver.json",
+  "title": "Semantic Version",
+  "description": "A strict Semantic Versioning 2.0.0 version without coercion.",
+  "type": "string",
+  "pattern": "^(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)(-((0|[1-9][0-9]*)|([0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))([.]((0|[1-9][0-9]*)|([0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)))*)?([+]([0-9A-Za-z-]+)([.][0-9A-Za-z-]+)*)?$"
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schemas.montferret.dev/module-manifest/v1.json",
+  "name": "montferret/sqlite",
+  "namespace": "DB::SQLITE",
+  "version": "1.3.0-beta.1+build.7",
+  "description": "Provides SQLite database access for Ferret queries.",
+  "license": "(Apache-2.0 OR MIT)",
+  "authors": [
+    {
+      "name": "MontFerret Authors",
+      "email": "maintainers@montferret.dev",
+      "url": "https://montferret.dev/"
+    }
+  ],
+  "documentation": "https://docs.montferret.dev/modules/sqlite/",
+  "repository": "https://github.com/MontFerret/contrib/",
+  "links": {
+    "changelog": "https://github.com/MontFerret/contrib/releases/",
+    "issues": "https://github.com/MontFerret/contrib/issues/"
+  },
+  "compatibility": {
+    "ferret": "^2.0.0"
+  },
+  "dependencies": [
+    {
+      "module": "montferret/yaml",
+      "version": "~1.2.0"
+    }
+  ],
+  "keywords": ["database", "sqlite"],
+  "categories": ["data"],
+  "exports": {
+    "namespaces": [
+      {
+        "name": "DB::SQLITE",
+        "functions": ["OPEN", "EXECUTE"],
+        "types": ["Connection"],
+        "constants": ["VERSION"]
+      }
+    ],
+    "dialects": ["sql"]
+  }
+}

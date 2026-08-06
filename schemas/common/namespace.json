@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/common/namespace.json",
+  "title": "Ferret Runtime Namespace",
+  "description": "A case-sensitive Ferret namespace composed of ASCII identifier segments joined by ::.",
+  "type": "string",
+  "pattern": "^[A-Za-z][A-Za-z0-9_]*(::[A-Za-z][A-Za-z0-9_]*)*$"
+}

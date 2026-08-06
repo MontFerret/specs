@@ -1,0 +1,14 @@
+$schema: https://schemas.montferret.dev/module-manifest/v1.json
+name: montferret/crawler
+namespace: WEB::CRAWLER
+version: 1.0.0
+description: Combines HTTP and parsing modules for web crawling.
+license: INVALID-LICENSE
+documentation: https://docs.montferret.dev/modules/crawler/
+compatibility:
+  ferret: not-a-range
+dependencies:
+  - module: montferret/http
+    version: also-not-a-range
+  - module: montferret/http
+    version: ^2.0.0

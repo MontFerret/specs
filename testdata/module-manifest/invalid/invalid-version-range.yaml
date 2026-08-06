@@ -1,0 +1,9 @@
+$schema: https://schemas.montferret.dev/module-manifest/v1.json
+name: montferret/http
+namespace: NET::HTTP
+version: 1.0.0
+description: Provides HTTP client functions for Ferret queries.
+license: Apache-2.0
+documentation: https://docs.montferret.dev/modules/http/
+compatibility:
+  ferret: definitely-not-a-range
