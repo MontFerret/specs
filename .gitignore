@@ -99,3 +99,4 @@ Temporary Items
 
 # Compiled source
 bin/
+.env
