@@ -95,15 +95,20 @@ Run the default formatting, vet, and test checks with:
 make check
 ```
 
+JSON formatting requires `jq`. It uses two-space indentation and preserves the
+authored key order.
+
 Other common operations include:
 
 ```sh
-make build       # Build all packages.
-make test-race   # Run tests with the race detector.
-make fmt         # Format Go source files.
-make tidy        # Update module metadata.
-make mod-check   # Check module metadata without changing it.
-make coverage    # Write coverage.out.
-make clean       # Clear the test cache and coverage profile.
-make help        # List every available target.
+make build           # Build all packages.
+make test-race       # Run tests with the race detector.
+make fmt             # Format Go and JSON files.
+make fmt-json        # Format only JSON files.
+make fmt-json-check  # Check JSON formatting without changing files.
+make tidy            # Update module metadata.
+make mod-check       # Check module metadata without changing it.
+make coverage        # Write coverage.out.
+make clean           # Clear the test cache and coverage profile.
+make help            # List every available target.
 ```

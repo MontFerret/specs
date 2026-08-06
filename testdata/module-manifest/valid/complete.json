@@ -27,17 +27,31 @@
       "version": "~1.2.0"
     }
   ],
-  "keywords": ["database", "sqlite"],
-  "categories": ["data"],
+  "keywords": [
+    "database",
+    "sqlite"
+  ],
+  "categories": [
+    "data"
+  ],
   "exports": {
     "namespaces": [
       {
         "name": "DB::SQLITE",
-        "functions": ["OPEN", "EXECUTE"],
-        "types": ["Connection"],
-        "constants": ["VERSION"]
+        "functions": [
+          "OPEN",
+          "EXECUTE"
+        ],
+        "types": [
+          "Connection"
+        ],
+        "constants": [
+          "VERSION"
+        ]
       }
     ],
-    "dialects": ["sql"]
+    "dialects": [
+      "sql"
+    ]
   }
 }

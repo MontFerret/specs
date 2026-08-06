@@ -100,7 +100,9 @@
     "author": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name"],
+      "required": [
+        "name"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -118,7 +120,9 @@
     "compatibility": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["ferret"],
+      "required": [
+        "ferret"
+      ],
       "properties": {
         "ferret": {
           "$ref": "https://schemas.ferretlang.org/common/version-range.json"
@@ -128,7 +132,10 @@
     "dependency": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["module", "version"],
+      "required": [
+        "module",
+        "version"
+      ],
       "properties": {
         "module": {
           "$ref": "https://schemas.ferretlang.org/common/identifier.json"
@@ -162,7 +169,9 @@
     "namespaceExport": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name"],
+      "required": [
+        "name"
+      ],
       "properties": {
         "name": {
           "$ref": "https://schemas.ferretlang.org/common/namespace.json"

@@ -10,11 +10,20 @@
     "namespaces": [
       {
         "name": "DB::SQLITE",
-        "functions": ["OPEN", "EXECUTE"],
-        "types": ["Connection"],
-        "constants": ["VERSION"]
+        "functions": [
+          "OPEN",
+          "EXECUTE"
+        ],
+        "types": [
+          "Connection"
+        ],
+        "constants": [
+          "VERSION"
+        ]
       }
     ],
-    "dialects": ["sql"]
+    "dialects": [
+      "sql"
+    ]
   }
 }
