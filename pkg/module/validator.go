@@ -16,7 +16,7 @@ import (
 	ferretschemas "github.com/MontFerret/specs/schemas"
 )
 
-const manifestSchemaPath = "module-manifest/v1.json"
+const manifestSchemaPath = "module/v1.json"
 
 var (
 	compileOnce      sync.Once
@@ -104,12 +104,12 @@ func moduleSchema() (*jsonschema.Schema, error) {
 		compiler.UseLoader(offlineLoader{})
 
 		resources := map[string]string{
-			"https://schemas.montferret.dev/common/identifier.json":    "common/identifier.json",
-			"https://schemas.montferret.dev/common/namespace.json":     "common/namespace.json",
-			"https://schemas.montferret.dev/common/semver.json":        "common/semver.json",
-			"https://schemas.montferret.dev/common/version-range.json": "common/version-range.json",
-			"https://schemas.montferret.dev/common/spdx-license.json":  "common/spdx-license.json",
-			"https://schemas.montferret.dev/common/url.json":           "common/url.json",
+			"https://schemas.ferretlang.org/common/identifier.json":    "common/identifier.json",
+			"https://schemas.ferretlang.org/common/namespace.json":     "common/namespace.json",
+			"https://schemas.ferretlang.org/common/semver.json":        "common/semver.json",
+			"https://schemas.ferretlang.org/common/version-range.json": "common/version-range.json",
+			"https://schemas.ferretlang.org/common/spdx-license.json":  "common/spdx-license.json",
+			"https://schemas.ferretlang.org/common/url.json":           "common/url.json",
 			SchemaV1: manifestSchemaPath,
 		}
 

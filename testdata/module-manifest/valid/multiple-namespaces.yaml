@@ -1,4 +1,4 @@
-$schema: https://schemas.montferret.dev/module-manifest/v1.json
+$schema: https://schemas.ferretlang.org/module/v1.json
 name: montferret/sqlite
 namespace: DB::SQLITE
 version: 1.1.0

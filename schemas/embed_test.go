@@ -64,7 +64,7 @@ func TestEveryEmbeddedSchemaCompilesOffline(t *testing.T) {
 }
 
 func TestReservedSchemasRejectEveryDocument(t *testing.T) {
-	for _, path := range []string{"plugin-manifest/v1.json", "registry-entry/v1.json"} {
+	for _, path := range []string{"plugin/v1.json", "registry/v1.json"} {
 		path := path
 		t.Run(path, func(t *testing.T) {
 			t.Parallel()

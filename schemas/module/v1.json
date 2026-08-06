@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://schemas.ferretlang.org/module-manifest/v1.json",
+  "$id": "https://schemas.ferretlang.org/module/v1.json",
   "title": "Ferret Module Manifest v1",
   "description": "The canonical manifest for a distributed Ferret module.",
   "type": "object",
@@ -16,7 +16,7 @@
   ],
   "properties": {
     "$schema": {
-      "const": "https://schemas.ferretlang.org/module-manifest/v1.json"
+      "const": "https://schemas.ferretlang.org/module/v1.json"
     },
     "name": {
       "$ref": "https://schemas.ferretlang.org/common/identifier.json"

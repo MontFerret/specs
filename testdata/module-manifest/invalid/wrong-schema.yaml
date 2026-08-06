@@ -1,4 +1,4 @@
-$schema: https://schemas.montferret.dev/module-manifest/v2.json
+$schema: https://schemas.ferretlang.org/module/v2.json
 name: montferret/http
 namespace: NET::HTTP
 version: 1.0.0

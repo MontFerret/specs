@@ -7,7 +7,7 @@ import "embed"
 // FS contains every published or reserved schema in this module.
 //
 // Paths are relative to this package directory, for example
-// "module-manifest/v1.json".
+// "module/v1.json".
 //
-//go:embed common/*.json module-manifest/*.json plugin-manifest/*.json registry-entry/*.json
+//go:embed common/*.json module/*.json plugin/*.json registry/*.json
 var FS embed.FS

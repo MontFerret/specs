@@ -1,4 +1,4 @@
-$schema: https://schemas.montferret.dev/module-manifest/v1.json
+$schema: https://schemas.ferretlang.org/module/v1.json
 name: montferret/crawler
 namespace: WEB::CRAWLER
 version: 1.0.0

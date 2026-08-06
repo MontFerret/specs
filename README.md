@@ -12,17 +12,17 @@ or resolved.
 The canonical schema is:
 
 ```text
-https://schemas.montferret.dev/module-manifest/v1.json
+https://schemas.ferretlang.org/module/v1.json
 ```
 
 The schema uses JSON Schema Draft 2020-12 and references reusable components
-under `https://schemas.montferret.dev/common/`. The checked-in schemas are the
+under `https://schemas.ferretlang.org/common/`. The checked-in schemas are the
 source of truth; publishing the schema host is managed separately.
 
 A minimal YAML manifest is:
 
 ```yaml
-$schema: https://schemas.montferret.dev/module-manifest/v1.json
+$schema: https://schemas.ferretlang.org/module/v1.json
 name: montferret/sqlite
 namespace: DB::SQLITE
 version: 1.0.0
@@ -84,14 +84,26 @@ that were valid under an earlier v1 schema. Because objects are closed, an older
 embedded validator is not guaranteed to accept fields introduced by a later v1
 schema.
 
-The registry-entry and plugin-manifest v1 files are reserved placeholders. They
+The registry and plugin v1 files are reserved placeholders. They
 deliberately reject every document and are not implemented specifications.
 
 ## Development
 
-Run the repository checks with:
+Run the default formatting, vet, and test checks with:
 
 ```sh
-go test ./...
-go vet ./...
+make check
+```
+
+Other common operations include:
+
+```sh
+make build       # Build all packages.
+make test-race   # Run tests with the race detector.
+make fmt         # Format Go source files.
+make tidy        # Update module metadata.
+make mod-check   # Check module metadata without changing it.
+make coverage    # Write coverage.out.
+make clean       # Clear the test cache and coverage profile.
+make help        # List every available target.
 ```
