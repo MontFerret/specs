@@ -1,5 +1,7 @@
 # Ferret Specifications
 
+[![CI](https://github.com/MontFerret/specs/actions/workflows/ci.yml/badge.svg)](https://github.com/MontFerret/specs/actions/workflows/ci.yml)
+
 This repository is the canonical source for machine-readable specifications and
 validation libraries used across the Ferret ecosystem.
 
