@@ -48,7 +48,7 @@
       "$ref": "https://schemas.ferretlang.org/common/url.json"
     },
     "repository": {
-      "$ref": "https://schemas.ferretlang.org/common/url.json"
+      "$ref": "#/$defs/repository"
     },
     "links": {
       "type": "object",
@@ -126,6 +126,23 @@
       "properties": {
         "ferret": {
           "$ref": "https://schemas.ferretlang.org/common/version-range.json"
+        }
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "$ref": "https://schemas.ferretlang.org/common/url.json"
+        },
+        "directory": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^/\\\\\\r\\n]+(/[^/\\\\\\r\\n]+)*$"
         }
       }
     },

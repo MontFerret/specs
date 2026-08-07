@@ -1,0 +1,8 @@
+$schema: https://schemas.ferretlang.org/module/v1.json
+name: montferret/sqlite
+namespace: DB::SQLITE
+version: 1.0.0
+description: Provides SQLite database access for Ferret queries.
+license: Apache-2.0
+documentation: https://docs.montferret.dev/modules/sqlite/
+repository: https://github.com/MontFerret/contrib

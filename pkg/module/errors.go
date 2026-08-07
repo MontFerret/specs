@@ -22,6 +22,10 @@ const (
 	RuleDuplicate Rule = "duplicate"
 	// RuleNamespaceScope identifies an export outside the module namespace.
 	RuleNamespaceScope Rule = "namespace-scope"
+	// RuleSelfDependency identifies a direct dependency on the declaring module.
+	RuleSelfDependency Rule = "self-dependency"
+	// RuleRepositoryDirectory identifies a non-normalized repository directory.
+	RuleRepositoryDirectory Rule = "repository-directory"
 )
 
 type (

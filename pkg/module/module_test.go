@@ -89,6 +89,12 @@ func TestJSONAndYAMLDecodeIdentically(t *testing.T) {
 	}
 }
 
+func TestCanonicalManifestFilename(t *testing.T) {
+	if module.ManifestFilename != "ferret.yaml" {
+		t.Fatalf("manifest filename = %q, want ferret.yaml", module.ManifestFilename)
+	}
+}
+
 func TestPublicIngestionAPIsValidateByDefault(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(fixtureRoot, "valid", "minimal.yaml"))
 	if err != nil {
@@ -243,9 +249,30 @@ func TestOptionalFieldsRemainUnset(t *testing.T) {
 
 	if manifest.Authors != nil || manifest.Links != nil || manifest.Compatibility != nil ||
 		manifest.Dependencies != nil || manifest.Keywords != nil || manifest.Categories != nil ||
-		manifest.Exports != nil || manifest.Repository != "" {
+		manifest.Exports != nil || manifest.Repository != nil {
 		t.Fatalf("optional defaults were inserted: %#v", manifest)
 	}
+}
+
+func TestStructuredRepositoryRoundTrip(t *testing.T) {
+	manifest, err := module.LoadFile(filepath.Join(fixtureRoot, "valid", "complete.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &module.Repository{
+		URL:       "https://github.com/MontFerret/contrib",
+		Directory: "modules/db/sqlite",
+	}
+	if !reflect.DeepEqual(manifest.Repository, want) {
+		t.Fatalf("repository = %#v, want %#v", manifest.Repository, want)
+	}
+}
+
+func TestLegacyRepositoryStringIsRejected(t *testing.T) {
+	_, err := module.LoadFile(filepath.Join(fixtureRoot, "invalid", "legacy-repository-string.yaml"))
+	validationErr := requireValidationErrors(t, err)
+	requireViolation(t, validationErr, "/repository", module.Rule("type"))
 }
 
 func TestSchemaBoundaries(t *testing.T) {
@@ -265,14 +292,62 @@ func TestSchemaBoundaries(t *testing.T) {
 	requireViolation(t, validationErr, "/documentation", module.Rule("pattern"))
 
 	manifest = minimalManifest()
-	manifest.Repository = "https://"
+	manifest.Repository = &module.Repository{URL: "https://"}
 	validationErr = requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/repository", module.Rule("pattern"))
+	requireViolation(t, validationErr, "/repository/url", module.Rule("pattern"))
 
 	manifest = minimalManifest()
 	manifest.Authors = []module.Author{{Name: "Maintainer", Email: "not-an-email"}}
 	validationErr = requireValidationErrors(t, module.Validate(manifest))
 	requireViolation(t, validationErr, "/authors/0/email", module.Rule("format"))
+}
+
+func TestRepositoryDirectoryNormalization(t *testing.T) {
+	for _, directory := range []string{".", "..", "modules/./sqlite", "modules/../sqlite"} {
+		manifest := minimalManifest()
+		manifest.Repository = &module.Repository{
+			URL:       "https://github.com/MontFerret/contrib",
+			Directory: directory,
+		}
+
+		validationErr := requireValidationErrors(t, module.Validate(manifest))
+		requireViolation(t, validationErr, "/repository/directory", module.RuleRepositoryDirectory)
+	}
+}
+
+func TestNamespaceCasingFollowsFQL(t *testing.T) {
+	for _, namespace := range []string{"db::sqlite", "Db::SQLite", "DB::SQLITE"} {
+		manifest := minimalManifest()
+		manifest.Namespace = namespace
+		manifest.Exports = &module.Exports{Namespaces: []module.NamespaceExport{{
+			Name:      namespace,
+			Functions: []string{"OPEN"},
+		}}}
+
+		if err := module.Validate(manifest); err != nil {
+			t.Errorf("namespace %q should be valid: %v", namespace, err)
+		}
+	}
+}
+
+func TestNPMRangeExamples(t *testing.T) {
+	for _, value := range []string{"^2.0.0", "~2.4.0", ">=2.0.0 <3.0.0", "2.x"} {
+		manifest := minimalManifest()
+		manifest.Compatibility = &module.Compatibility{Ferret: value}
+		manifest.Dependencies = []module.Dependency{{Module: "montferret/yaml", Version: value}}
+
+		if err := module.Validate(manifest); err != nil {
+			t.Errorf("range %q should be valid: %v", value, err)
+		}
+	}
+}
+
+func TestSelfDependency(t *testing.T) {
+	manifest := minimalManifest()
+	manifest.Dependencies = []module.Dependency{{Module: manifest.Name, Version: "^1.0.0"}}
+
+	validationErr := requireValidationErrors(t, module.Validate(manifest))
+	requireViolation(t, validationErr, "/dependencies/0/module", module.RuleSelfDependency)
 }
 
 func TestSPDXExpressions(t *testing.T) {

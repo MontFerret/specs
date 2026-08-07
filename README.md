@@ -11,6 +11,11 @@ Ferret Module Manifest v1 describes what a module is and which runtime surface
 it exposes. It does not describe how the module is built, published, installed,
 or resolved.
 
+Every module root has at most one repository-level manifest. Its canonical
+filename is `ferret.yaml`. The validation library can also parse explicitly
+supplied JSON documents, but JSON is not a second repository filename
+convention.
+
 The canonical schema is:
 
 ```text
@@ -31,12 +36,33 @@ version: 1.0.0
 description: Provides SQLite database access for Ferret queries.
 license: Apache-2.0
 documentation: https://docs.montferret.dev/modules/sqlite/
+repository:
+  url: https://github.com/MontFerret/contrib
+  directory: modules/db/sqlite
 ```
 
 `name` is the distribution identity used by registries and dependency
 declarations. `namespace` is the independent, case-sensitive runtime identity
-used by Ferret scripts. An exported namespace must equal or descend from the
-manifest's runtime namespace.
+used by Ferret scripts. Namespace segments follow the normal FQL identifier
+grammar and are not restricted to uppercase. An exported namespace must equal
+or descend from the manifest's runtime namespace.
+
+`repository.url` identifies the source repository. Monorepo modules set the
+optional normalized relative `repository.directory`; standalone modules omit
+it. The legacy repository URL string is not part of this corrected v1
+contract.
+
+`description` is a concise, single-line registry and CLI summary; detailed
+guidance belongs at the required `documentation` URL. `authors`, when present,
+is a non-empty array whose entries require `name` and may include `email` and
+`url`. Authorship does not confer registry ownership or publishing authority.
+
+`dependencies` lists required runtime module coordinates and npm-compatible
+version ranges as descriptive metadata. Duplicate coordinates and direct
+self-dependencies are invalid; this specification does not install or resolve
+them. `exports` groups functions, types, and constants by FQL namespace and
+lists dialects at module level. Duplicate exports and namespaces outside the
+module's primary namespace tree are invalid.
 
 Version constraints use npm-compatible semantic version ranges. Prerelease
 versions do not satisfy a range unless the range explicitly includes a
@@ -62,7 +88,7 @@ three stages:
 All ingestion functions return only fully validated manifests:
 
 ```go
-manifest, err := module.LoadFile("ferret-module.yaml")
+manifest, err := module.LoadFile(module.ManifestFilename)
 if err != nil {
     var validationErr *module.ValidationErrors
     if errors.As(err, &validationErr) {
@@ -91,14 +117,14 @@ validation remains offline. Validate one or more JSON or YAML module manifests
 by passing their paths explicitly:
 
 ```sh
-ferret-spec validate module ferret-module.yaml
-ferret-spec validate module modules/http/ferret-module.yaml modules/html/ferret-module.yaml
+ferret-spec validate module ferret.yaml
+ferret-spec validate module modules/http/ferret.yaml modules/html/ferret.yaml
 ```
 
 Use `-` once to read a manifest from standard input:
 
 ```sh
-ferret-spec validate module - < ferret-module.yaml
+ferret-spec validate module - < ferret.yaml
 ```
 
 Text output is the default. Valid inputs are reported on standard output, while
@@ -106,7 +132,7 @@ violations and operational errors are reported on standard error. For portable
 CI integration, `--format json` writes one versioned report to standard output:
 
 ```sh
-ferret-spec validate module --format json ferret-module.yaml
+ferret-spec validate module --format json ferret.yaml
 ```
 
 The JSON report contains `formatVersion`, `kind`, aggregate `status`, and one
@@ -126,7 +152,7 @@ the validator directly:
 
 ```sh
 go install github.com/MontFerret/specs/cmd/ferret-spec@v1.1.0
-ferret-spec validate module ferret-module.yaml
+ferret-spec validate module ferret.yaml
 ```
 
 ## Versioning

@@ -3,7 +3,8 @@
 ## Status
 
 This document defines the documentation contract for registry-compatible
-Ferret modules using Module Manifest v1.
+Ferret modules using the canonical repository manifest `ferret.yaml` and
+Module Manifest v1. A module root contains at most one such manifest.
 
 The manifest's required `documentation` field must be an absolute HTTPS URL for
 the module's canonical long-form documentation. Long-form documentation does

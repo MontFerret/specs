@@ -5,4 +5,5 @@ version: 1.0.0
 description: Provides HTTP client functions for Ferret queries.
 license: Apache-2.0
 documentation: http://docs.montferret.dev/modules/http/
-repository: https://
+repository:
+  url: https://

@@ -4,6 +4,9 @@ package module
 // SchemaV1 is the canonical schema identifier for Ferret Module Manifest v1.
 const SchemaV1 = "https://schemas.ferretlang.org/module/v1.json"
 
+// ManifestFilename is the canonical repository-level module manifest filename.
+const ManifestFilename = "ferret.yaml"
+
 type (
 	// Manifest describes the distribution and runtime surface of a Ferret module.
 	// Version and version-range fields retain their original textual form.
@@ -16,7 +19,7 @@ type (
 		License       string            `json:"license" yaml:"license"`
 		Authors       []Author          `json:"authors,omitempty" yaml:"authors,omitempty"`
 		Documentation string            `json:"documentation" yaml:"documentation"`
-		Repository    string            `json:"repository,omitempty" yaml:"repository,omitempty"`
+		Repository    *Repository       `json:"repository,omitempty" yaml:"repository,omitempty"`
 		Links         map[string]string `json:"links,omitempty" yaml:"links,omitempty"`
 		Compatibility *Compatibility    `json:"compatibility,omitempty" yaml:"compatibility,omitempty"`
 		Dependencies  []Dependency      `json:"dependencies,omitempty" yaml:"dependencies,omitempty"`
@@ -30,6 +33,12 @@ type (
 		Name  string `json:"name" yaml:"name"`
 		Email string `json:"email,omitempty" yaml:"email,omitempty"`
 		URL   string `json:"url,omitempty" yaml:"url,omitempty"`
+	}
+
+	// Repository identifies the module's source repository and optional module root.
+	Repository struct {
+		URL       string `json:"url" yaml:"url"`
+		Directory string `json:"directory,omitempty" yaml:"directory,omitempty"`
 	}
 
 	// Compatibility declares the supported Ferret runtime versions.

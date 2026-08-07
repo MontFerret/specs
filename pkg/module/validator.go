@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/github/go-spdx/v2/spdxexp"
@@ -188,6 +189,22 @@ func validateSemantics(manifest *Manifest) error {
 		} else {
 			seenDependencies[dependency.Module] = struct{}{}
 		}
+
+		if dependency.Module == manifest.Name {
+			violations = append(violations, Violation{
+				Path:    path + "/module",
+				Rule:    RuleSelfDependency,
+				Message: fmt.Sprintf("module %q must not depend on itself", manifest.Name),
+			})
+		}
+	}
+
+	if manifest.Repository != nil && manifest.Repository.Directory != "" && !validRepositoryDirectory(manifest.Repository.Directory) {
+		violations = append(violations, Violation{
+			Path:    jsonPointer("repository", "directory"),
+			Rule:    RuleRepositoryDirectory,
+			Message: "repository directory must be a normalized relative slash-separated path",
+		})
 	}
 
 	if valid, _ := spdxexp.ValidateLicenses([]string{manifest.License}); !valid {
@@ -203,6 +220,22 @@ func validateSemantics(manifest *Manifest) error {
 	}
 
 	return newValidationErrors(violations)
+}
+
+func validRepositoryDirectory(value string) bool {
+	for _, segment := range strings.Split(value, "/") {
+		if segment == "" || segment == "." || segment == ".." {
+			return false
+		}
+
+		for _, character := range segment {
+			if unicode.IsControl(character) {
+				return false
+			}
+		}
+	}
+
+	return true
 }
 
 func appendRangeViolation(violations []Violation, path, value string) []Violation {
