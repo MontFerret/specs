@@ -78,6 +78,57 @@ The package exposes `LoadFile`, `Load`, and `Parse` for serialized documents and
 `Validate` for programmatically constructed manifests. Validation never fetches
 schemas over the network.
 
+## Manifest validation CLI
+
+Install a release-pinned copy of `ferret-spec` with:
+
+```sh
+go install github.com/MontFerret/specs/cmd/ferret-spec@v1.1.0
+```
+
+The CLI uses the same embedded schemas and semantic checks as `pkg/module`, so
+validation remains offline. Validate one or more JSON or YAML module manifests
+by passing their paths explicitly:
+
+```sh
+ferret-spec validate module ferret-module.yaml
+ferret-spec validate module modules/http/ferret-module.yaml modules/html/ferret-module.yaml
+```
+
+Use `-` once to read a manifest from standard input:
+
+```sh
+ferret-spec validate module - < ferret-module.yaml
+```
+
+Text output is the default. Valid inputs are reported on standard output, while
+violations and operational errors are reported on standard error. For portable
+CI integration, `--format json` writes one versioned report to standard output:
+
+```sh
+ferret-spec validate module --format json ferret-module.yaml
+```
+
+The JSON report contains `formatVersion`, `kind`, aggregate `status`, and one
+ordered result per input. Status values are `valid`, `invalid`, and `error`.
+JSON Pointer paths, stable rule identifiers, and messages are preserved in each
+invalid result.
+
+Exit codes are:
+
+- `0` when every input is valid;
+- `1` when at least one manifest is invalid;
+- `2` for command usage, file I/O, or internal errors.
+
+Operational errors take precedence over invalid results, but every supplied
+input is processed. A version-pinned CI step can therefore install and invoke
+the validator directly:
+
+```sh
+go install github.com/MontFerret/specs/cmd/ferret-spec@v1.1.0
+ferret-spec validate module ferret-module.yaml
+```
+
 ## Versioning
 
 Schema paths are versioned by major version. Within v1, changes must remain
