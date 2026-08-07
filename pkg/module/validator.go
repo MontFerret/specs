@@ -68,6 +68,7 @@ func validateSchema(document any) error {
 func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation {
 	if len(validationErr.Causes) > 0 {
 		violations := make([]Violation, 0, len(validationErr.Causes))
+
 		for _, cause := range validationErr.Causes {
 			violations = append(violations, flattenSchemaErrors(cause)...)
 		}
@@ -77,6 +78,7 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation 
 
 	rule := RuleSchema
 	message := "document does not match the module manifest schema"
+
 	if validationErr.ErrorKind != nil {
 		keywordPath := validationErr.ErrorKind.KeywordPath()
 		if len(keywordPath) > 0 {
@@ -122,6 +124,7 @@ func moduleSchema() (*jsonschema.Schema, error) {
 
 			if err := compiler.AddResource(schemaURL, document); err != nil {
 				compileErr = fmt.Errorf("register embedded schema %q: %w", path, err)
+
 				return
 			}
 		}
@@ -150,12 +153,6 @@ func readSchema(path string) (any, error) {
 	}
 
 	return document, nil
-}
-
-type offlineLoader struct{}
-
-func (offlineLoader) Load(url string) (any, error) {
-	return nil, fmt.Errorf("external schema loading is disabled: %s", url)
 }
 
 func validateSemantics(manifest *Manifest) error {

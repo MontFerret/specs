@@ -16,6 +16,7 @@ func LoadFile(path string) (*Manifest, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open module manifest %q: %w", path, err)
 	}
+
 	defer file.Close()
 
 	manifest, err := Load(file)
@@ -84,6 +85,7 @@ func decodeDocument(data []byte) (any, error) {
 			Message: "manifest must contain exactly one document",
 		}})
 	}
+
 	if err != io.EOF {
 		return nil, newValidationErrors([]Violation{{
 			Rule:    RuleDecode,

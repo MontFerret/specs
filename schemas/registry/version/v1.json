@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/registry/version/v1.json",
+  "title": "Ferret Registry Version Record v1",
+  "description": "An immutable Ferret module release identity pinned to a Git commit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "version",
+    "tag",
+    "commit"
+  ],
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.ferretlang.org/registry/version/v1.json"
+    },
+    "version": {
+      "$ref": "https://schemas.ferretlang.org/common/semver.json"
+    },
+    "tag": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+    }
+  }
+}

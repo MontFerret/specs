@@ -86,8 +86,27 @@ that were valid under an earlier v1 schema. Because objects are closed, an older
 embedded validator is not guaranteed to accept fields introduced by a later v1
 schema.
 
-The registry and plugin v1 files are reserved placeholders. They
-deliberately reject every document and are not implemented specifications.
+## Registry v1
+
+Ferret Registry v1 defines the reviewed records used by a Git-backed module
+registry. A registry module manifest identifies an owner/name coordinate and an
+anonymous HTTPS Git source; a version record pins a strict semantic version and
+Git tag to an exact commit.
+
+The canonical schemas are:
+
+```text
+https://schemas.ferretlang.org/registry/module/v1.json
+https://schemas.ferretlang.org/registry/version/v1.json
+```
+
+The `pkg/registry` package parses and validates both JSON document types without
+network access. Registry-checkout layout, remote Git inspection, publication
+history, and generated catalogs remain responsibilities of the registry
+implementation rather than these portable contracts.
+
+The older registry placeholder at `/registry/v1.json` and the plugin v1 file
+remain reserved and deliberately reject every document.
 
 ## Development
 
