@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/MontFerret/specs/pkg/registry"
 )
@@ -89,6 +90,44 @@ func TestValidVersionRecord(t *testing.T) {
 		if err := registry.ValidateVersionRecord(record); err != nil {
 			t.Errorf("expected %#v to be valid: %v", test, err)
 		}
+	}
+}
+
+func TestVersionRecordPublishedAt(t *testing.T) {
+	t.Run("optional", func(t *testing.T) {
+		if err := registry.ValidateVersionRecord(validVersionRecord()); err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("UTC RFC3339", func(t *testing.T) {
+		publishedAt := time.Date(2026, time.August, 7, 21, 54, 12, 0, time.UTC)
+		record := validVersionRecord()
+		record.PublishedAt = &publishedAt
+
+		data, err := json.Marshal(record)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		parsed, err := registry.ParseVersionRecord(data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if parsed.PublishedAt == nil || !parsed.PublishedAt.Equal(publishedAt) {
+			t.Fatalf("unexpected publication timestamp: %v", parsed.PublishedAt)
+		}
+	})
+
+	for name, document := range map[string]string{
+		"malformed": `{"$schema":"https://schemas.ferretlang.org/registry/version/v1.json","version":"1.2.0","tag":"v1.2.0","commit":"0123456789abcdef0123456789abcdef01234567","publishedAt":"not-a-time"}`,
+		"non-UTC":   `{"$schema":"https://schemas.ferretlang.org/registry/version/v1.json","version":"1.2.0","tag":"v1.2.0","commit":"0123456789abcdef0123456789abcdef01234567","publishedAt":"2026-08-07T17:54:12-04:00"}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := registry.ParseVersionRecord([]byte(document)); err == nil {
+				t.Fatal("expected publication timestamp to be rejected")
+			}
+		})
 	}
 }
 

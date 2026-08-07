@@ -26,6 +26,11 @@
     "commit": {
       "type": "string",
       "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "Z$"
     }
   }
 }
