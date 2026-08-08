@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/registry/artifact/module-index/v1.json",
+  "title": "Ferret Registry Module Index Artifact v1",
+  "description": "The compact module discovery index in a generated Ferret Registry distribution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "modules"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "modules": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/moduleReference"
+      }
+    }
+  },
+  "$defs": {
+    "moduleReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "href"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "https://schemas.ferretlang.org/common/identifier.json"
+        },
+        "latest": {
+          "$ref": "https://schemas.ferretlang.org/common/semver.json"
+        },
+        "href": {
+          "type": "string",
+          "minLength": 1,
+          "format": "uri-reference",
+          "pattern": "^[^?#\\r\\n]+$"
+        }
+      }
+    }
+  }
+}

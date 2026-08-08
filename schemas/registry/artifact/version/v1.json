@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/registry/artifact/version/v1.json",
+  "title": "Ferret Registry Version Artifact v1",
+  "description": "The immutable public metadata and content references for one generated Ferret Registry module version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "version",
+    "description",
+    "namespace",
+    "license",
+    "source",
+    "package",
+    "content"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "$ref": "https://schemas.ferretlang.org/common/identifier.json"
+    },
+    "version": {
+      "$ref": "https://schemas.ferretlang.org/common/semver.json"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[^\\r\\n]+$"
+    },
+    "namespace": {
+      "$ref": "https://schemas.ferretlang.org/common/namespace.json"
+    },
+    "ferret": {
+      "$ref": "https://schemas.ferretlang.org/common/version-range.json"
+    },
+    "license": {
+      "$ref": "https://schemas.ferretlang.org/common/spdx-license.json"
+    },
+    "links": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9._-]*$"
+      },
+      "additionalProperties": {
+        "$ref": "https://schemas.ferretlang.org/common/url.json"
+      }
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "package": {
+      "$ref": "#/$defs/package"
+    },
+    "content": {
+      "$ref": "#/$defs/content"
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "commit"
+      ],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://[^/?#\\s]+/[^?#\\s]+$"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^/\\\\\\r\\n]+(/[^/\\\\\\r\\n]+)*$"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+        }
+      }
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]+$"
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "required": [
+        "documentation",
+        "documentationHtml"
+      ],
+      "propertyNames": {
+        "pattern": "^[a-z][A-Za-z0-9]*$"
+      },
+      "properties": {
+        "documentation": {
+          "$ref": "#/$defs/contentReference"
+        },
+        "documentationHtml": {
+          "$ref": "#/$defs/contentReference"
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/contentReference"
+      }
+    },
+    "contentReference": {
+      "type": "string",
+      "minLength": 1,
+      "format": "uri-reference",
+      "pattern": "^[^?#\\r\\n]+$"
+    }
+  }
+}

@@ -9,5 +9,5 @@ import "embed"
 // Paths are relative to this package directory, for example
 // "module/v1.json".
 //
-//go:embed common/*.json module/*.json plugin/*.json registry/*.json registry/*/*.json
+//go:embed common/*.json module/*.json plugin/*.json registry/*.json registry/*/*.json registry/artifact/*/*.json
 var FS embed.FS

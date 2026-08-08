@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.ferretlang.org/registry/artifact/plugin-index/v1.json",
+  "title": "Ferret Registry Plugin Index Artifact v1",
+  "description": "The reserved plugin index in a generated Ferret Registry distribution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "plugins"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "plugins": {
+      "type": "array",
+      "maxItems": 0
+    }
+  }
+}

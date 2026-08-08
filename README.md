@@ -178,8 +178,24 @@ https://schemas.ferretlang.org/registry/version/v1.json
 ```
 
 The `pkg/registry` package parses and validates both JSON document types without
-network access. Registry-checkout layout, remote Git inspection, publication
-history, and generated catalogs remain responsibilities of the registry
+network access.
+
+Generated Registry artifact v1 is split by document role:
+
+```text
+https://schemas.ferretlang.org/registry/artifact/root/v1.json
+https://schemas.ferretlang.org/registry/artifact/module-index/v1.json
+https://schemas.ferretlang.org/registry/artifact/module/v1.json
+https://schemas.ferretlang.org/registry/artifact/version/v1.json
+https://schemas.ferretlang.org/registry/artifact/category-index/v1.json
+https://schemas.ferretlang.org/registry/artifact/category/v1.json
+https://schemas.ferretlang.org/registry/artifact/plugin-index/v1.json
+```
+
+The `pkg/registry/artifact` package owns the corresponding wire types, strict
+JSON parsing, and local validation. Registry-checkout layout, remote Git
+inspection, publication history, distribution generation, hosting, and
+cross-document navigation remain responsibilities of the registry
 implementation rather than these portable contracts.
 
 The older registry placeholder at `/registry/v1.json` and the plugin v1 file

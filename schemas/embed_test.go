@@ -78,6 +78,22 @@ func TestReservedSchemasRejectEveryDocument(t *testing.T) {
 	}
 }
 
+func TestRegistryArtifactSchemasAreEmbedded(t *testing.T) {
+	for _, path := range []string{
+		"registry/artifact/root/v1.json",
+		"registry/artifact/module-index/v1.json",
+		"registry/artifact/module/v1.json",
+		"registry/artifact/version/v1.json",
+		"registry/artifact/category-index/v1.json",
+		"registry/artifact/category/v1.json",
+		"registry/artifact/plugin-index/v1.json",
+	} {
+		if _, err := ferretschemas.FS.ReadFile(path); err != nil {
+			t.Errorf("artifact schema %s is not embedded: %v", path, err)
+		}
+	}
+}
+
 func compileSingle(t *testing.T, path string) *jsonschema.Schema {
 	t.Helper()
 	data, err := ferretschemas.FS.ReadFile(path)
