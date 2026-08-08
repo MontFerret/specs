@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/MontFerret/specs/internal/jsondocument"
+	"github.com/MontFerret/specs/pkg/validation"
 )
 
 // ParseModuleManifest parses and validates one JSON Registry Module Manifest.
@@ -113,7 +114,7 @@ func LoadVersionRecordFile(filePath string) (*VersionRecord, error) {
 func decodeDocument(data []byte) (any, error) {
 	value, err := jsondocument.Decode(data)
 	if err != nil {
-		return nil, newValidationErrors([]Violation{{Rule: RuleDecode, Message: err.Error()}})
+		return nil, validation.NewErrors(validation.ScopeRegistry, []validation.Violation{{Rule: validation.RuleDecode, Message: err.Error()}})
 	}
 
 	return value, nil

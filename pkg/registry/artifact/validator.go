@@ -16,6 +16,7 @@ import (
 	"github.com/MontFerret/specs/internal/jsondocument"
 	"github.com/MontFerret/specs/internal/registryidentity"
 	registryspec "github.com/MontFerret/specs/pkg/registry"
+	"github.com/MontFerret/specs/pkg/validation"
 	ferretschemas "github.com/MontFerret/specs/schemas"
 )
 
@@ -87,7 +88,7 @@ func validateDocument(schemaID string, document any) error {
 			return fmt.Errorf("validate registry artifact schema: %w", err)
 		}
 
-		return newValidationErrors(flattenSchemaErrors(validationErr, schemaID))
+		return validation.NewErrors(validation.ScopeRegistryArtifact, flattenSchemaErrors(validationErr, schemaID))
 	}
 
 	return nil
@@ -196,9 +197,9 @@ func artifactSchemaIDs() []string {
 	}
 }
 
-func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID string) []Violation {
+func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID string) []validation.Violation {
 	if len(validationErr.Causes) > 0 {
-		violations := make([]Violation, 0, len(validationErr.Causes))
+		violations := make([]validation.Violation, 0, len(validationErr.Causes))
 		for _, cause := range validationErr.Causes {
 			violations = append(violations, flattenSchemaErrors(cause, schemaID)...)
 		}
@@ -206,12 +207,12 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID str
 		return violations
 	}
 
-	rule := RuleSchema
+	rule := validation.RuleSchema
 	message := "document does not match the registry artifact schema"
 	if validationErr.ErrorKind != nil {
 		keywordPath := validationErr.ErrorKind.KeywordPath()
 		if len(keywordPath) > 0 {
-			rule = Rule(keywordPath[len(keywordPath)-1])
+			rule = validation.Rule(keywordPath[len(keywordPath)-1])
 		}
 
 		output := validationErr.BasicOutput()
@@ -219,14 +220,14 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID str
 			message = output.Error.String()
 		}
 	}
-	if rule == Rule("pattern") {
+	if rule == validation.Rule("pattern") {
 		if identityMessage := artifactIdentityMessage(schemaID, validationErr.InstanceLocation); identityMessage != "" {
 			message = identityMessage
 		}
 	}
 
-	return []Violation{{
-		Path:    jsonPointer(validationErr.InstanceLocation...),
+	return []validation.Violation{{
+		Path:    validation.JSONPointer(validationErr.InstanceLocation...),
 		Rule:    rule,
 		Message: message,
 	}}
@@ -261,19 +262,19 @@ func artifactIdentityMessage(schemaID string, location []string) string {
 
 func validateRootIndexSemantics(index *RootIndex) error {
 	violations := validateReferenceMap(index.Artifacts, "artifacts")
-	return newValidationErrors(violations)
+	return validation.NewErrors(validation.ScopeRegistryArtifact, violations)
 }
 
 func validateModuleIndexSemantics(index *ModuleIndex) error {
-	return newValidationErrors(validateModuleReferences(index.Modules, "modules"))
+	return validation.NewErrors(validation.ScopeRegistryArtifact, validateModuleReferences(index.Modules, "modules"))
 }
 
 func validateModuleDocumentSemantics(document *ModuleDocument) error {
-	violations := make([]Violation, 0)
+	violations := make([]validation.Violation, 0)
 	if document.ID != document.Owner+"/"+document.Name {
-		violations = append(violations, Violation{
+		violations = append(violations, validation.Violation{
 			Path:    "/id",
-			Rule:    RuleIdentity,
+			Rule:    validation.RuleIdentity,
 			Message: "module ID must equal owner/name",
 		})
 	}
@@ -282,9 +283,9 @@ func validateModuleDocumentSemantics(document *ModuleDocument) error {
 	latestFound := document.Latest == ""
 	for index, version := range document.Versions {
 		if _, exists := seen[version.Version]; exists {
-			violations = append(violations, Violation{
-				Path:    jsonPointer("versions", strconv.Itoa(index), "version"),
-				Rule:    RuleDuplicate,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer("versions", strconv.Itoa(index), "version"),
+				Rule:    validation.RuleDuplicate,
 				Message: fmt.Sprintf("version %q is duplicated", version.Version),
 			})
 		}
@@ -296,35 +297,35 @@ func validateModuleDocumentSemantics(document *ModuleDocument) error {
 
 		_, offset := version.PublishedAt.Zone()
 		if version.PublishedAt.IsZero() || offset != 0 {
-			violations = append(violations, Violation{
-				Path:    jsonPointer("versions", strconv.Itoa(index), "publishedAt"),
-				Rule:    RuleTimestamp,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer("versions", strconv.Itoa(index), "publishedAt"),
+				Rule:    validation.RuleTimestamp,
 				Message: "publication timestamp must be a non-zero UTC time",
 			})
 		}
 
 		if err := validateReference(version.Href); err != nil {
-			violations = append(violations, Violation{
-				Path:    jsonPointer("versions", strconv.Itoa(index), "href"),
-				Rule:    RuleReference,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer("versions", strconv.Itoa(index), "href"),
+				Rule:    validation.RuleReference,
 				Message: err.Error(),
 			})
 		}
 	}
 
 	if !latestFound {
-		violations = append(violations, Violation{
+		violations = append(violations, validation.Violation{
 			Path:    "/latest",
-			Rule:    RuleIdentity,
+			Rule:    validation.RuleIdentity,
 			Message: fmt.Sprintf("latest version %q is not listed", document.Latest),
 		})
 	}
 
-	return newValidationErrors(violations)
+	return validation.NewErrors(validation.ScopeRegistryArtifact, violations)
 }
 
 func validateVersionDocumentSemantics(document *VersionDocument) error {
-	violations := make([]Violation, 0)
+	violations := make([]validation.Violation, 0)
 
 	owner, name, _ := strings.Cut(document.ID, "/")
 	manifest := &registryspec.ModuleManifest{
@@ -347,9 +348,9 @@ func validateVersionDocumentSemantics(document *VersionDocument) error {
 	violations = appendRegistryViolations(violations, registryspec.ValidateVersionRecord(record), "source")
 
 	if err := gomodule.Check(document.Package.Path, "v"+document.Version); err != nil {
-		violations = append(violations, Violation{
+		violations = append(violations, validation.Violation{
 			Path:    "/package/path",
-			Rule:    RulePackagePath,
+			Rule:    validation.RulePackagePath,
 			Message: err.Error(),
 		})
 	}
@@ -357,9 +358,9 @@ func validateVersionDocumentSemantics(document *VersionDocument) error {
 	for name, value := range document.Links {
 		parsed, err := url.Parse(value)
 		if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
-			violations = append(violations, Violation{
-				Path:    jsonPointer("links", name),
-				Rule:    RuleReference,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer("links", name),
+				Rule:    validation.RuleReference,
 				Message: "link must be an absolute HTTPS URL without credentials",
 			})
 		}
@@ -367,55 +368,55 @@ func validateVersionDocumentSemantics(document *VersionDocument) error {
 
 	violations = append(violations, validateReferenceMap(document.Content, "content")...)
 
-	return newValidationErrors(violations)
+	return validation.NewErrors(validation.ScopeRegistryArtifact, violations)
 }
 
 func validateCategoryIndexSemantics(index *CategoryIndex) error {
-	violations := make([]Violation, 0)
+	violations := make([]validation.Violation, 0)
 	seen := make(map[string]struct{}, len(index.Categories))
 	for itemIndex, category := range index.Categories {
 		if _, exists := seen[category.ID]; exists {
-			violations = append(violations, Violation{
-				Path:    jsonPointer("categories", strconv.Itoa(itemIndex), "id"),
-				Rule:    RuleDuplicate,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer("categories", strconv.Itoa(itemIndex), "id"),
+				Rule:    validation.RuleDuplicate,
 				Message: fmt.Sprintf("category ID %q is duplicated", category.ID),
 			})
 		}
 		seen[category.ID] = struct{}{}
 
 		if err := validateReference(category.Href); err != nil {
-			violations = append(violations, Violation{
-				Path:    jsonPointer("categories", strconv.Itoa(itemIndex), "href"),
-				Rule:    RuleReference,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer("categories", strconv.Itoa(itemIndex), "href"),
+				Rule:    validation.RuleReference,
 				Message: err.Error(),
 			})
 		}
 	}
 
-	return newValidationErrors(violations)
+	return validation.NewErrors(validation.ScopeRegistryArtifact, violations)
 }
 
 func validateCategoryDocumentSemantics(document *CategoryDocument) error {
-	return newValidationErrors(validateModuleReferences(document.Modules, "modules"))
+	return validation.NewErrors(validation.ScopeRegistryArtifact, validateModuleReferences(document.Modules, "modules"))
 }
 
-func validateModuleReferences(entries []ModuleIndexEntry, field string) []Violation {
-	violations := make([]Violation, 0)
+func validateModuleReferences(entries []ModuleIndexEntry, field string) []validation.Violation {
+	violations := make([]validation.Violation, 0)
 	seen := make(map[string]struct{}, len(entries))
 	for index, entry := range entries {
 		if _, exists := seen[entry.ID]; exists {
-			violations = append(violations, Violation{
-				Path:    jsonPointer(field, strconv.Itoa(index), "id"),
-				Rule:    RuleDuplicate,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer(field, strconv.Itoa(index), "id"),
+				Rule:    validation.RuleDuplicate,
 				Message: fmt.Sprintf("module ID %q is duplicated", entry.ID),
 			})
 		}
 		seen[entry.ID] = struct{}{}
 
 		if err := validateReference(entry.Href); err != nil {
-			violations = append(violations, Violation{
-				Path:    jsonPointer(field, strconv.Itoa(index), "href"),
-				Rule:    RuleReference,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer(field, strconv.Itoa(index), "href"),
+				Rule:    validation.RuleReference,
 				Message: err.Error(),
 			})
 		}
@@ -424,13 +425,13 @@ func validateModuleReferences(entries []ModuleIndexEntry, field string) []Violat
 	return violations
 }
 
-func validateReferenceMap(references map[string]string, field string) []Violation {
-	violations := make([]Violation, 0)
+func validateReferenceMap(references map[string]string, field string) []validation.Violation {
+	violations := make([]validation.Violation, 0)
 	for name, value := range references {
 		if err := validateReference(value); err != nil {
-			violations = append(violations, Violation{
-				Path:    jsonPointer(field, name),
-				Rule:    RuleReference,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer(field, name),
+				Rule:    validation.RuleReference,
 				Message: err.Error(),
 			})
 		}
@@ -452,29 +453,29 @@ func validateReference(value string) error {
 	return nil
 }
 
-func appendRegistryViolations(violations []Violation, err error, prefix string) []Violation {
+func appendRegistryViolations(violations []validation.Violation, err error, prefix string) []validation.Violation {
 	if err == nil {
 		return violations
 	}
 
-	var validationErr *registryspec.ValidationErrors
+	var validationErr *validation.Errors
 	if !errors.As(err, &validationErr) {
-		return append(violations, Violation{Path: jsonPointer(prefix), Rule: RuleSource, Message: err.Error()})
+		return append(violations, validation.Violation{Path: validation.JSONPointer(prefix), Rule: validation.RuleSource, Message: err.Error()})
 	}
 
 	for _, violation := range validationErr.Violations {
 		path := violation.Path
 		if prefix != "" {
 			if path == "/commit" {
-				path = jsonPointer(prefix, "commit")
+				path = validation.JSONPointer(prefix, "commit")
 			} else if path != "/version" {
-				path = jsonPointer(prefix) + path
+				path = validation.JSONPointer(prefix) + path
 			}
 		}
 
-		violations = append(violations, Violation{
+		violations = append(violations, validation.Violation{
 			Path:    path,
-			Rule:    RuleSource,
+			Rule:    validation.RuleSource,
 			Message: violation.Message,
 		})
 	}

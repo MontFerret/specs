@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/MontFerret/specs/pkg/module"
+	"github.com/MontFerret/specs/pkg/validation"
 )
 
 const fixtureRoot = "../../testdata/module-manifest"
@@ -149,25 +149,25 @@ func TestRunWritesStructuredInvalidJSON(t *testing.T) {
 		Results: []validationResult{{
 			Source: path,
 			Status: statusInvalid,
-			Violations: []module.Violation{
+			Violations: []validation.Violation{
 				{
 					Path:    "/compatibility/ferret",
-					Rule:    module.RuleVersionRange,
+					Rule:    validation.RuleVersionRange,
 					Message: "version must be a valid npm-compatible semantic version range",
 				},
 				{
 					Path:    "/dependencies/0/version",
-					Rule:    module.RuleVersionRange,
+					Rule:    validation.RuleVersionRange,
 					Message: "version must be a valid npm-compatible semantic version range",
 				},
 				{
 					Path:    "/dependencies/1/module",
-					Rule:    module.RuleDuplicate,
+					Rule:    validation.RuleDuplicate,
 					Message: "dependency \"montferret/http\" is declared more than once",
 				},
 				{
 					Path:    "/license",
-					Rule:    module.RuleSPDX,
+					Rule:    validation.RuleSPDX,
 					Message: "license must be a valid SPDX license expression",
 				},
 			},
@@ -194,11 +194,11 @@ func TestOperationalErrorsTakePrecedenceAndDoNotStopValidation(t *testing.T) {
 			validated = append(validated, value)
 			switch value {
 			case "invalid":
-				return &module.ValidationErrors{Violations: []module.Violation{{
+				return validation.NewErrors(validation.ScopeManifest, []validation.Violation{{
 					Path:    "/version",
-					Rule:    module.RuleSemVer,
+					Rule:    validation.RuleSemVer,
 					Message: "bad version",
-				}}}
+				}})
 			case "broken":
 				return errors.New("validator exploded")
 			default:

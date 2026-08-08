@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/MontFerret/specs/pkg/registry/artifact"
+	"github.com/MontFerret/specs/pkg/validation"
 )
 
 const commitSHA1 = "0123456789abcdef0123456789abcdef01234567"
@@ -113,21 +114,21 @@ func TestSameDocumentSemantics(t *testing.T) {
 		duplicate := index.Modules[0]
 		duplicate.Href = "/modules/acme/archive/duplicate.json"
 		index.Modules = append(index.Modules, duplicate)
-		requireRule(t, requireValidationErrors(t, artifact.ValidateModuleIndex(index)), artifact.RuleDuplicate)
+		requireRule(t, requireValidationErrors(t, artifact.ValidateModuleIndex(index)), validation.RuleDuplicate)
 	})
 
 	t.Run("module identity", func(t *testing.T) {
 		document := validModuleDocument()
 		document.ID = "acme/other"
 		validationErr := requireValidationErrors(t, artifact.ValidateModuleDocument(document))
-		requireViolationDetails(t, validationErr, "/id", artifact.RuleIdentity, "module ID must equal owner/name")
+		requireViolationDetails(t, validationErr, "/id", validation.RuleIdentity, "module ID must equal owner/name")
 	})
 
 	t.Run("latest", func(t *testing.T) {
 		document := validModuleDocument()
 		document.Latest = "2.0.0"
 		validationErr := requireValidationErrors(t, artifact.ValidateModuleDocument(document))
-		requireViolationDetails(t, validationErr, "/latest", artifact.RuleIdentity, `latest version "2.0.0" is not listed`)
+		requireViolationDetails(t, validationErr, "/latest", validation.RuleIdentity, `latest version "2.0.0" is not listed`)
 	})
 
 	t.Run("duplicate versions", func(t *testing.T) {
@@ -135,25 +136,25 @@ func TestSameDocumentSemantics(t *testing.T) {
 		duplicate := document.Versions[0]
 		duplicate.Href = "/modules/acme/archive/versions/1.0.0/duplicate.json"
 		document.Versions = append(document.Versions, duplicate)
-		requireRule(t, requireValidationErrors(t, artifact.ValidateModuleDocument(document)), artifact.RuleDuplicate)
+		requireRule(t, requireValidationErrors(t, artifact.ValidateModuleDocument(document)), validation.RuleDuplicate)
 	})
 
 	t.Run("zero publication timestamp", func(t *testing.T) {
 		document := validModuleDocument()
 		document.Versions[0].PublishedAt = time.Time{}
-		requireRule(t, requireValidationErrors(t, artifact.ValidateModuleDocument(document)), artifact.RuleTimestamp)
+		requireRule(t, requireValidationErrors(t, artifact.ValidateModuleDocument(document)), validation.RuleTimestamp)
 	})
 
 	t.Run("package path", func(t *testing.T) {
 		document := validVersionDocument()
 		document.Package.Path = "example.com/archive/v2"
-		requireRule(t, requireValidationErrors(t, artifact.ValidateVersionDocument(document)), artifact.RulePackagePath)
+		requireRule(t, requireValidationErrors(t, artifact.ValidateVersionDocument(document)), validation.RulePackagePath)
 	})
 
 	t.Run("source", func(t *testing.T) {
 		document := validVersionDocument()
 		document.Source.Repository = "https://user@example.com/archive.git"
-		requireRule(t, requireValidationErrors(t, artifact.ValidateVersionDocument(document)), artifact.RuleSource)
+		requireRule(t, requireValidationErrors(t, artifact.ValidateVersionDocument(document)), validation.RuleSource)
 	})
 }
 
@@ -229,7 +230,7 @@ func TestModuleIdentityRequiresCanonicalLowercase(t *testing.T) {
 			t.Run(surface.name+" "+id, func(t *testing.T) {
 				for _, err := range surface.errors(id) {
 					validationErr := requireValidationErrors(t, err)
-					requireViolationDetails(t, validationErr, surface.path, artifact.Rule("pattern"), coordinateMessage)
+					requireViolationDetails(t, validationErr, surface.path, validation.Rule("pattern"), coordinateMessage)
 				}
 			})
 		}
@@ -274,7 +275,7 @@ func TestModuleIdentityRequiresCanonicalLowercase(t *testing.T) {
 				parseError(t, document, artifact.ParseModuleDocument),
 			} {
 				validationErr := requireValidationErrors(t, err)
-				requireViolationDetails(t, validationErr, test.path, artifact.Rule("pattern"), test.message)
+				requireViolationDetails(t, validationErr, test.path, validation.Rule("pattern"), test.message)
 			}
 		})
 	}
@@ -414,21 +415,21 @@ func parseError[T any](t *testing.T, value *T, parse func([]byte) (*T, error)) e
 	return err
 }
 
-func requireValidationErrors(t *testing.T, err error) *artifact.ValidationErrors {
+func requireValidationErrors(t *testing.T, err error) *validation.Errors {
 	t.Helper()
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
 
-	var validationErr *artifact.ValidationErrors
+	var validationErr *validation.Errors
 	if !errors.As(err, &validationErr) {
-		t.Fatalf("expected *artifact.ValidationErrors, got %T: %v", err, err)
+		t.Fatalf("expected *validation.Errors, got %T: %v", err, err)
 	}
 
 	return validationErr
 }
 
-func requireRule(t *testing.T, validationErr *artifact.ValidationErrors, rule artifact.Rule) {
+func requireRule(t *testing.T, validationErr *validation.Errors, rule validation.Rule) {
 	t.Helper()
 	for _, violation := range validationErr.Violations {
 		if violation.Rule == rule {
@@ -443,7 +444,7 @@ func requireRule(t *testing.T, validationErr *artifact.ValidationErrors, rule ar
 	t.Fatalf("missing rule %q in %s", rule, strings.Join(rules, ", "))
 }
 
-func requireViolationDetails(t *testing.T, validationErr *artifact.ValidationErrors, path string, rule artifact.Rule, message string) {
+func requireViolationDetails(t *testing.T, validationErr *validation.Errors, path string, rule validation.Rule, message string) {
 	t.Helper()
 	for _, violation := range validationErr.Violations {
 		if violation.Path == path && violation.Rule == rule && violation.Message == message {

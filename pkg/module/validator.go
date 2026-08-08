@@ -15,6 +15,7 @@ import (
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/MontFerret/specs/internal/registryidentity"
+	"github.com/MontFerret/specs/pkg/validation"
 	ferretschemas "github.com/MontFerret/specs/schemas"
 )
 
@@ -64,12 +65,12 @@ func validateSchema(document any) error {
 		return fmt.Errorf("validate module manifest schema: %w", err)
 	}
 
-	return newValidationErrors(flattenSchemaErrors(validationErr))
+	return validation.NewErrors(validation.ScopeManifest, flattenSchemaErrors(validationErr))
 }
 
-func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation {
+func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []validation.Violation {
 	if len(validationErr.Causes) > 0 {
-		violations := make([]Violation, 0, len(validationErr.Causes))
+		violations := make([]validation.Violation, 0, len(validationErr.Causes))
 
 		for _, cause := range validationErr.Causes {
 			violations = append(violations, flattenSchemaErrors(cause)...)
@@ -78,13 +79,13 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation 
 		return violations
 	}
 
-	rule := RuleSchema
+	rule := validation.RuleSchema
 	message := "document does not match the module manifest schema"
 
 	if validationErr.ErrorKind != nil {
 		keywordPath := validationErr.ErrorKind.KeywordPath()
 		if len(keywordPath) > 0 {
-			rule = Rule(keywordPath[len(keywordPath)-1])
+			rule = validation.Rule(keywordPath[len(keywordPath)-1])
 		}
 
 		output := validationErr.BasicOutput()
@@ -92,12 +93,12 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation 
 			message = output.Error.String()
 		}
 	}
-	if rule == Rule("pattern") && isDistributionIdentityLocation(validationErr.InstanceLocation) {
+	if rule == validation.Rule("pattern") && isDistributionIdentityLocation(validationErr.InstanceLocation) {
 		message = registryidentity.CoordinateMessage
 	}
 
-	return []Violation{{
-		Path:    jsonPointer(validationErr.InstanceLocation...),
+	return []validation.Violation{{
+		Path:    validation.JSONPointer(validationErr.InstanceLocation...),
 		Rule:    rule,
 		Message: message,
 	}}
@@ -169,12 +170,12 @@ func readSchema(path string) (any, error) {
 }
 
 func validateSemantics(manifest *Manifest) error {
-	violations := make([]Violation, 0)
+	violations := make([]validation.Violation, 0)
 
 	if _, err := semver.StrictNewVersion(manifest.Version); err != nil {
-		violations = append(violations, Violation{
-			Path:    jsonPointer("version"),
-			Rule:    RuleSemVer,
+		violations = append(violations, validation.Violation{
+			Path:    validation.JSONPointer("version"),
+			Rule:    validation.RuleSemVer,
 			Message: "version must be a strict Semantic Versioning 2.0.0 version",
 		})
 	}
@@ -182,20 +183,20 @@ func validateSemantics(manifest *Manifest) error {
 	if manifest.Compatibility != nil {
 		violations = appendRangeViolation(
 			violations,
-			jsonPointer("compatibility", "ferret"),
+			validation.JSONPointer("compatibility", "ferret"),
 			manifest.Compatibility.Ferret,
 		)
 	}
 
 	seenDependencies := make(map[string]struct{}, len(manifest.Dependencies))
 	for i, dependency := range manifest.Dependencies {
-		path := jsonPointer("dependencies", strconv.Itoa(i))
+		path := validation.JSONPointer("dependencies", strconv.Itoa(i))
 		violations = appendRangeViolation(violations, path+"/version", dependency.Version)
 
 		if _, exists := seenDependencies[dependency.Module]; exists {
-			violations = append(violations, Violation{
+			violations = append(violations, validation.Violation{
 				Path:    path + "/module",
-				Rule:    RuleDuplicate,
+				Rule:    validation.RuleDuplicate,
 				Message: fmt.Sprintf("dependency %q is declared more than once", dependency.Module),
 			})
 		} else {
@@ -203,26 +204,26 @@ func validateSemantics(manifest *Manifest) error {
 		}
 
 		if dependency.Module == manifest.Name {
-			violations = append(violations, Violation{
+			violations = append(violations, validation.Violation{
 				Path:    path + "/module",
-				Rule:    RuleSelfDependency,
+				Rule:    validation.RuleSelfDependency,
 				Message: fmt.Sprintf("module %q must not depend on itself", manifest.Name),
 			})
 		}
 	}
 
 	if manifest.Repository != nil && manifest.Repository.Directory != "" && !validRepositoryDirectory(manifest.Repository.Directory) {
-		violations = append(violations, Violation{
-			Path:    jsonPointer("repository", "directory"),
-			Rule:    RuleRepositoryDirectory,
+		violations = append(violations, validation.Violation{
+			Path:    validation.JSONPointer("repository", "directory"),
+			Rule:    validation.RuleRepositoryDirectory,
 			Message: "repository directory must be a normalized relative slash-separated path",
 		})
 	}
 
 	if valid, _ := spdxexp.ValidateLicenses([]string{manifest.License}); !valid {
-		violations = append(violations, Violation{
-			Path:    jsonPointer("license"),
-			Rule:    RuleSPDX,
+		violations = append(violations, validation.Violation{
+			Path:    validation.JSONPointer("license"),
+			Rule:    validation.RuleSPDX,
 			Message: "license must be a valid SPDX license expression",
 		})
 	}
@@ -231,7 +232,7 @@ func validateSemantics(manifest *Manifest) error {
 		violations = append(violations, validateExports(manifest.Namespace, manifest.Exports)...)
 	}
 
-	return newValidationErrors(violations)
+	return validation.NewErrors(validation.ScopeManifest, violations)
 }
 
 func validRepositoryDirectory(value string) bool {
@@ -250,11 +251,11 @@ func validRepositoryDirectory(value string) bool {
 	return true
 }
 
-func appendRangeViolation(violations []Violation, path, value string) []Violation {
+func appendRangeViolation(violations []validation.Violation, path, value string) []validation.Violation {
 	if _, err := semver.NewConstraint(value); err != nil {
-		return append(violations, Violation{
+		return append(violations, validation.Violation{
 			Path:    path,
-			Rule:    RuleVersionRange,
+			Rule:    validation.RuleVersionRange,
 			Message: "version must be a valid npm-compatible semantic version range",
 		})
 	}
@@ -262,16 +263,16 @@ func appendRangeViolation(violations []Violation, path, value string) []Violatio
 	return violations
 }
 
-func validateExports(root string, exports *Exports) []Violation {
-	violations := make([]Violation, 0)
+func validateExports(root string, exports *Exports) []validation.Violation {
+	violations := make([]validation.Violation, 0)
 	seenNamespaces := make(map[string]struct{}, len(exports.Namespaces))
 
 	for i, namespace := range exports.Namespaces {
-		path := jsonPointer("exports", "namespaces", strconv.Itoa(i))
+		path := validation.JSONPointer("exports", "namespaces", strconv.Itoa(i))
 		if _, exists := seenNamespaces[namespace.Name]; exists {
-			violations = append(violations, Violation{
+			violations = append(violations, validation.Violation{
 				Path:    path + "/name",
-				Rule:    RuleDuplicate,
+				Rule:    validation.RuleDuplicate,
 				Message: fmt.Sprintf("namespace %q is exported more than once", namespace.Name),
 			})
 		} else {
@@ -279,9 +280,9 @@ func validateExports(root string, exports *Exports) []Violation {
 		}
 
 		if namespace.Name != root && !strings.HasPrefix(namespace.Name, root+"::") {
-			violations = append(violations, Violation{
+			violations = append(violations, validation.Violation{
 				Path:    path + "/name",
-				Rule:    RuleNamespaceScope,
+				Rule:    validation.RuleNamespaceScope,
 				Message: fmt.Sprintf("exported namespace %q must equal or descend from module namespace %q", namespace.Name, root),
 			})
 		}
@@ -292,9 +293,9 @@ func validateExports(root string, exports *Exports) []Violation {
 	seenDialects := make(map[string]struct{}, len(exports.Dialects))
 	for i, dialect := range exports.Dialects {
 		if _, exists := seenDialects[dialect]; exists {
-			violations = append(violations, Violation{
-				Path:    jsonPointer("exports", "dialects", strconv.Itoa(i)),
-				Rule:    RuleDuplicate,
+			violations = append(violations, validation.Violation{
+				Path:    validation.JSONPointer("exports", "dialects", strconv.Itoa(i)),
+				Rule:    validation.RuleDuplicate,
 				Message: fmt.Sprintf("dialect %q is exported more than once", dialect),
 			})
 		} else {
@@ -305,7 +306,7 @@ func validateExports(root string, exports *Exports) []Violation {
 	return violations
 }
 
-func validateMembers(basePath string, namespace NamespaceExport) []Violation {
+func validateMembers(basePath string, namespace NamespaceExport) []validation.Violation {
 	type memberList struct {
 		name   string
 		values []string
@@ -317,14 +318,14 @@ func validateMembers(basePath string, namespace NamespaceExport) []Violation {
 		{name: "constants", values: namespace.Constants},
 	}
 	seen := make(map[string]string)
-	violations := make([]Violation, 0)
+	violations := make([]validation.Violation, 0)
 
 	for _, list := range lists {
 		for i, member := range list.values {
 			if firstKind, exists := seen[member]; exists {
-				violations = append(violations, Violation{
+				violations = append(violations, validation.Violation{
 					Path:    basePath + "/" + list.name + "/" + strconv.Itoa(i),
-					Rule:    RuleDuplicate,
+					Rule:    validation.RuleDuplicate,
 					Message: fmt.Sprintf("member %q duplicates an export in %s", member, firstKind),
 				})
 			} else {

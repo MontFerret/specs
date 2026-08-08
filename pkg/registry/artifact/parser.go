@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/MontFerret/specs/internal/jsondocument"
+	"github.com/MontFerret/specs/pkg/validation"
 )
 
 func ParseRootIndex(data []byte) (*RootIndex, error) {
@@ -37,7 +38,7 @@ func ParsePluginIndex(data []byte) (*PluginIndex, error) {
 func parseArtifact[T any](data []byte, schemaID string, semantic func(*T) error) (*T, error) {
 	document, err := jsondocument.Decode(data)
 	if err != nil {
-		return nil, newValidationErrors([]Violation{{Rule: RuleDecode, Message: err.Error()}})
+		return nil, validation.NewErrors(validation.ScopeRegistryArtifact, []validation.Violation{{Rule: validation.RuleDecode, Message: err.Error()}})
 	}
 
 	if err := validateDocument(schemaID, document); err != nil {

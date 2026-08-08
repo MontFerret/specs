@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/MontFerret/specs/pkg/registry"
+	"github.com/MontFerret/specs/pkg/validation"
 )
 
 const commitSHA1 = "0123456789abcdef0123456789abcdef01234567"
@@ -67,7 +68,7 @@ func TestRegistryIdentityRequiresCanonicalLowercase(t *testing.T) {
 			test.mutate(manifest)
 
 			validationErr := requireValidationErrors(t, registry.ValidateModuleManifest(manifest))
-			requireViolationDetails(t, validationErr, test.path, registry.Rule("pattern"), test.message)
+			requireViolationDetails(t, validationErr, test.path, validation.Rule("pattern"), test.message)
 
 			data, err := json.Marshal(manifest)
 			if err != nil {
@@ -75,7 +76,7 @@ func TestRegistryIdentityRequiresCanonicalLowercase(t *testing.T) {
 			}
 			_, err = registry.ParseModuleManifest(data)
 			validationErr = requireValidationErrors(t, err)
-			requireViolationDetails(t, validationErr, test.path, registry.Rule("pattern"), test.message)
+			requireViolationDetails(t, validationErr, test.path, validation.Rule("pattern"), test.message)
 		})
 	}
 }
@@ -204,14 +205,14 @@ func TestParsingRejectsMissingAndUnknownFields(t *testing.T) {
 func TestParsingRejectsDuplicateKeysAndTrailingDocuments(t *testing.T) {
 	duplicate := `{"$schema":"https://schemas.ferretlang.org/registry/version/v1.json","version":"1.0.0","version":"2.0.0","tag":"v1.0.0","commit":"` + commitSHA1 + `"}`
 	_, err := registry.ParseVersionRecord([]byte(duplicate))
-	requireRule(t, requireValidationErrors(t, err), registry.RuleDecode)
+	requireRule(t, requireValidationErrors(t, err), validation.RuleDecode)
 
 	valid, err := json.Marshal(validVersionRecord())
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, err = registry.ParseVersionRecord(append(valid, []byte(` {}`)...))
-	requireRule(t, requireValidationErrors(t, err), registry.RuleDecode)
+	requireRule(t, requireValidationErrors(t, err), validation.RuleDecode)
 }
 
 func TestParsingAndLoadingRoundTrip(t *testing.T) {
@@ -267,19 +268,19 @@ func validVersionRecord() *registry.VersionRecord {
 	}
 }
 
-func requireValidationErrors(t *testing.T, err error) *registry.ValidationErrors {
+func requireValidationErrors(t *testing.T, err error) *validation.Errors {
 	t.Helper()
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
-	var validationErr *registry.ValidationErrors
+	var validationErr *validation.Errors
 	if !errors.As(err, &validationErr) {
-		t.Fatalf("expected *registry.ValidationErrors, got %T: %v", err, err)
+		t.Fatalf("expected *validation.Errors, got %T: %v", err, err)
 	}
 	return validationErr
 }
 
-func requireViolation(t *testing.T, validationErr *registry.ValidationErrors, path string) {
+func requireViolation(t *testing.T, validationErr *validation.Errors, path string) {
 	t.Helper()
 	for _, violation := range validationErr.Violations {
 		if violation.Path == path {
@@ -289,7 +290,7 @@ func requireViolation(t *testing.T, validationErr *registry.ValidationErrors, pa
 	t.Fatalf("missing violation at %q in %#v", path, validationErr.Violations)
 }
 
-func requireViolationDetails(t *testing.T, validationErr *registry.ValidationErrors, path string, rule registry.Rule, message string) {
+func requireViolationDetails(t *testing.T, validationErr *validation.Errors, path string, rule validation.Rule, message string) {
 	t.Helper()
 	for _, violation := range validationErr.Violations {
 		if violation.Path == path && violation.Rule == rule && violation.Message == message {
@@ -299,7 +300,7 @@ func requireViolationDetails(t *testing.T, validationErr *registry.ValidationErr
 	t.Fatalf("missing violation at %q with rule %q and message %q in %#v", path, rule, message, validationErr.Violations)
 }
 
-func requireRule(t *testing.T, validationErr *registry.ValidationErrors, rule registry.Rule) {
+func requireRule(t *testing.T, validationErr *validation.Errors, rule validation.Rule) {
 	t.Helper()
 	for _, violation := range validationErr.Violations {
 		if violation.Rule == rule {

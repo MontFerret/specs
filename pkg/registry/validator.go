@@ -14,6 +14,7 @@ import (
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 
 	"github.com/MontFerret/specs/internal/registryidentity"
+	"github.com/MontFerret/specs/pkg/validation"
 	ferretschemas "github.com/MontFerret/specs/schemas"
 )
 
@@ -105,12 +106,12 @@ func validateSchema(schema *jsonschema.Schema, document any, schemaID string) er
 		return fmt.Errorf("validate registry schema: %w", err)
 	}
 
-	return newValidationErrors(flattenSchemaErrors(validationErr, schemaID))
+	return validation.NewErrors(validation.ScopeRegistry, flattenSchemaErrors(validationErr, schemaID))
 }
 
-func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID string) []Violation {
+func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID string) []validation.Violation {
 	if len(validationErr.Causes) > 0 {
-		violations := make([]Violation, 0, len(validationErr.Causes))
+		violations := make([]validation.Violation, 0, len(validationErr.Causes))
 
 		for _, cause := range validationErr.Causes {
 			violations = append(violations, flattenSchemaErrors(cause, schemaID)...)
@@ -119,12 +120,12 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID str
 		return violations
 	}
 
-	rule := RuleSchema
+	rule := validation.RuleSchema
 	message := "document does not match the registry schema"
 	if validationErr.ErrorKind != nil {
 		keywordPath := validationErr.ErrorKind.KeywordPath()
 		if len(keywordPath) > 0 {
-			rule = Rule(keywordPath[len(keywordPath)-1])
+			rule = validation.Rule(keywordPath[len(keywordPath)-1])
 		}
 
 		output := validationErr.BasicOutput()
@@ -133,7 +134,7 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID str
 		}
 	}
 
-	if rule == Rule("pattern") && schemaID == ModuleManifestSchemaV1 && len(validationErr.InstanceLocation) == 1 {
+	if rule == validation.Rule("pattern") && schemaID == ModuleManifestSchemaV1 && len(validationErr.InstanceLocation) == 1 {
 		switch validationErr.InstanceLocation[0] {
 		case "owner":
 			message = registryidentity.OwnerMessage
@@ -142,8 +143,8 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID str
 		}
 	}
 
-	return []Violation{{
-		Path:    jsonPointer(validationErr.InstanceLocation...),
+	return []validation.Violation{{
+		Path:    validation.JSONPointer(validationErr.InstanceLocation...),
 		Rule:    rule,
 		Message: message,
 	}}
@@ -219,33 +220,33 @@ func (offlineLoader) Load(schemaURL string) (any, error) {
 }
 
 func validateModuleSemantics(manifest *ModuleManifest) error {
-	violations := make([]Violation, 0, 2)
+	violations := make([]validation.Violation, 0, 2)
 
 	if err := validateRepositoryURL(manifest.Source.Repository); err != nil {
-		violations = append(violations, Violation{Path: jsonPointer("source", "repository"), Rule: RuleRepositoryURL, Message: err.Error()})
+		violations = append(violations, validation.Violation{Path: validation.JSONPointer("source", "repository"), Rule: validation.RuleRepositoryURL, Message: err.Error()})
 	}
 
 	if manifest.Source.Path != "" {
 		if err := validateSourcePath(manifest.Source.Path); err != nil {
-			violations = append(violations, Violation{Path: jsonPointer("source", "path"), Rule: RuleSourcePath, Message: err.Error()})
+			violations = append(violations, validation.Violation{Path: validation.JSONPointer("source", "path"), Rule: validation.RuleSourcePath, Message: err.Error()})
 		}
 	}
 
-	return newValidationErrors(violations)
+	return validation.NewErrors(validation.ScopeRegistry, violations)
 }
 
 func validateVersionSemantics(record *VersionRecord) error {
-	violations := make([]Violation, 0, 2)
+	violations := make([]validation.Violation, 0, 2)
 
 	if _, err := semver.StrictNewVersion(record.Version); err != nil {
-		violations = append(violations, Violation{Path: jsonPointer("version"), Rule: RuleSemVer, Message: "version must be a strict Semantic Versioning 2.0.0 version"})
+		violations = append(violations, validation.Violation{Path: validation.JSONPointer("version"), Rule: validation.RuleSemVer, Message: "version must be a strict Semantic Versioning 2.0.0 version"})
 	}
 
 	if err := validateTag(record.Tag); err != nil {
-		violations = append(violations, Violation{Path: jsonPointer("tag"), Rule: RuleTag, Message: err.Error()})
+		violations = append(violations, validation.Violation{Path: validation.JSONPointer("tag"), Rule: validation.RuleTag, Message: err.Error()})
 	}
 
-	return newValidationErrors(violations)
+	return validation.NewErrors(validation.ScopeRegistry, violations)
 }
 
 func validateRepositoryURL(value string) error {

@@ -87,17 +87,19 @@ three stages:
 3. apply semantic rules such as npm range parsing, SPDX validation, duplicate
    detection, and export namespace containment.
 
-All ingestion functions return only fully validated manifests:
+All ingestion functions return only fully validated manifests. Structured
+failures use the shared `pkg/validation` package:
 
 ```go
 manifest, err := module.LoadFile(module.ManifestFilename)
 if err != nil {
-    var validationErr *module.ValidationErrors
+    var validationErr *validation.Errors
     if errors.As(err, &validationErr) {
         for _, violation := range validationErr.Violations {
             log.Printf("%s: %s", violation.Path, violation.Message)
         }
     }
+	
     return err
 }
 ```

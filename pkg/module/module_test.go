@@ -15,6 +15,7 @@ import (
 	"github.com/goccy/go-yaml"
 
 	"github.com/MontFerret/specs/pkg/module"
+	"github.com/MontFerret/specs/pkg/validation"
 )
 
 const fixtureRoot = "../../testdata/module-manifest"
@@ -57,7 +58,7 @@ func TestInvalidFixtures(t *testing.T) {
 				t.Fatal("expected fixture to be invalid")
 			}
 
-			var validationErr *module.ValidationErrors
+			var validationErr *validation.Errors
 			if !errors.As(err, &validationErr) {
 				t.Fatalf("expected structured validation errors, got %T: %v", err, err)
 			}
@@ -162,11 +163,11 @@ func TestMultipleSemanticViolations(t *testing.T) {
 	_, err := module.LoadFile(filepath.Join(fixtureRoot, "invalid", "multiple-violations.yaml"))
 	validationErr := requireValidationErrors(t, err)
 
-	want := map[string]module.Rule{
-		"/compatibility/ferret":   module.RuleVersionRange,
-		"/dependencies/0/version": module.RuleVersionRange,
-		"/dependencies/1/module":  module.RuleDuplicate,
-		"/license":                module.RuleSPDX,
+	want := map[string]validation.Rule{
+		"/compatibility/ferret":   validation.RuleVersionRange,
+		"/dependencies/0/version": validation.RuleVersionRange,
+		"/dependencies/1/module":  validation.RuleDuplicate,
+		"/license":                validation.RuleSPDX,
 	}
 	if len(validationErr.Violations) != len(want) {
 		t.Fatalf("expected %d violations, got %#v", len(want), validationErr.Violations)
@@ -189,7 +190,7 @@ func TestDuplicateExportsReportEveryDuplicateKind(t *testing.T) {
 		"/exports/namespaces/1/name":        false,
 	}
 	for _, violation := range validationErr.Violations {
-		if _, ok := wantPaths[violation.Path]; ok && violation.Rule == module.RuleDuplicate {
+		if _, ok := wantPaths[violation.Path]; ok && violation.Rule == validation.RuleDuplicate {
 			wantPaths[violation.Path] = true
 		}
 	}
@@ -208,23 +209,23 @@ func TestNamespaceScopeUsesSegmentBoundary(t *testing.T) {
 	}}}
 
 	validationErr := requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/exports/namespaces/0/name", module.RuleNamespaceScope)
+	requireViolation(t, validationErr, "/exports/namespaces/0/name", validation.RuleNamespaceScope)
 }
 
 func TestSchemaErrorsExposePointerAndKeyword(t *testing.T) {
 	_, err := module.LoadFile(filepath.Join(fixtureRoot, "invalid", "missing-documentation.yaml"))
 	validationErr := requireValidationErrors(t, err)
-	requireViolation(t, validationErr, "", module.Rule("required"))
+	requireViolation(t, validationErr, "", validation.Rule("required"))
 
 	_, err = module.LoadFile(filepath.Join(fixtureRoot, "invalid", "unknown-property.yaml"))
 	validationErr = requireValidationErrors(t, err)
-	requireViolation(t, validationErr, "", module.Rule("additionalProperties"))
+	requireViolation(t, validationErr, "", validation.Rule("additionalProperties"))
 }
 
 func TestDecodeRejectsDuplicateKeysAndMultipleDocuments(t *testing.T) {
 	_, err := module.LoadFile(filepath.Join(fixtureRoot, "invalid", "duplicate-key.yaml"))
 	validationErr := requireValidationErrors(t, err)
-	requireViolation(t, validationErr, "", module.RuleDecode)
+	requireViolation(t, validationErr, "", validation.RuleDecode)
 
 	data, err := os.ReadFile(filepath.Join(fixtureRoot, "valid", "minimal.yaml"))
 	if err != nil {
@@ -233,12 +234,12 @@ func TestDecodeRejectsDuplicateKeysAndMultipleDocuments(t *testing.T) {
 	data = append(data, []byte("\n---\nname: second/document\n")...)
 	_, err = module.Parse(data)
 	validationErr = requireValidationErrors(t, err)
-	requireViolation(t, validationErr, "", module.RuleDecode)
+	requireViolation(t, validationErr, "", validation.RuleDecode)
 }
 
 func TestValidateNilManifestReturnsStructuredError(t *testing.T) {
 	validationErr := requireValidationErrors(t, module.Validate(nil))
-	requireViolation(t, validationErr, "", module.Rule("type"))
+	requireViolation(t, validationErr, "", validation.Rule("type"))
 }
 
 func TestOptionalFieldsRemainUnset(t *testing.T) {
@@ -272,7 +273,7 @@ func TestStructuredRepositoryRoundTrip(t *testing.T) {
 func TestLegacyRepositoryStringIsRejected(t *testing.T) {
 	_, err := module.LoadFile(filepath.Join(fixtureRoot, "invalid", "legacy-repository-string.yaml"))
 	validationErr := requireValidationErrors(t, err)
-	requireViolation(t, validationErr, "/repository", module.Rule("type"))
+	requireViolation(t, validationErr, "/repository", validation.Rule("type"))
 }
 
 func TestSchemaBoundaries(t *testing.T) {
@@ -284,22 +285,22 @@ func TestSchemaBoundaries(t *testing.T) {
 
 	manifest.Description += "é"
 	validationErr := requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/description", module.Rule("maxLength"))
+	requireViolation(t, validationErr, "/description", validation.Rule("maxLength"))
 
 	manifest = minimalManifest()
 	manifest.Documentation = "http://docs.montferret.dev/modules/http/"
 	validationErr = requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/documentation", module.Rule("pattern"))
+	requireViolation(t, validationErr, "/documentation", validation.Rule("pattern"))
 
 	manifest = minimalManifest()
 	manifest.Repository = &module.Repository{URL: "https://"}
 	validationErr = requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/repository/url", module.Rule("pattern"))
+	requireViolation(t, validationErr, "/repository/url", validation.Rule("pattern"))
 
 	manifest = minimalManifest()
 	manifest.Authors = []module.Author{{Name: "Maintainer", Email: "not-an-email"}}
 	validationErr = requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/authors/0/email", module.Rule("format"))
+	requireViolation(t, validationErr, "/authors/0/email", validation.Rule("format"))
 }
 
 func TestRepositoryDirectoryNormalization(t *testing.T) {
@@ -311,7 +312,7 @@ func TestRepositoryDirectoryNormalization(t *testing.T) {
 		}
 
 		validationErr := requireValidationErrors(t, module.Validate(manifest))
-		requireViolation(t, validationErr, "/repository/directory", module.RuleRepositoryDirectory)
+		requireViolation(t, validationErr, "/repository/directory", validation.RuleRepositoryDirectory)
 	}
 }
 
@@ -332,7 +333,7 @@ func TestDistributionIdentityRequiresCanonicalLowercase(t *testing.T) {
 			manifest.Name = name
 
 			validationErr := requireValidationErrors(t, module.Validate(manifest))
-			requireViolationDetails(t, validationErr, "/name", module.Rule("pattern"), message)
+			requireViolationDetails(t, validationErr, "/name", validation.Rule("pattern"), message)
 
 			data, err := json.Marshal(manifest)
 			if err != nil {
@@ -340,14 +341,14 @@ func TestDistributionIdentityRequiresCanonicalLowercase(t *testing.T) {
 			}
 			_, err = module.Parse(data)
 			validationErr = requireValidationErrors(t, err)
-			requireViolationDetails(t, validationErr, "/name", module.Rule("pattern"), message)
+			requireViolationDetails(t, validationErr, "/name", validation.Rule("pattern"), message)
 		})
 	}
 
 	manifest := minimalManifest()
 	manifest.Dependencies = []module.Dependency{{Module: "MontFerret/archive", Version: "^1.0.0"}}
 	validationErr := requireValidationErrors(t, module.Validate(manifest))
-	requireViolationDetails(t, validationErr, "/dependencies/0/module", module.Rule("pattern"), message)
+	requireViolationDetails(t, validationErr, "/dependencies/0/module", validation.Rule("pattern"), message)
 }
 
 func TestNamespaceCasingFollowsFQL(t *testing.T) {
@@ -382,7 +383,7 @@ func TestSelfDependency(t *testing.T) {
 	manifest.Dependencies = []module.Dependency{{Module: manifest.Name, Version: "^1.0.0"}}
 
 	validationErr := requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/dependencies/0/module", module.RuleSelfDependency)
+	requireViolation(t, validationErr, "/dependencies/0/module", validation.RuleSelfDependency)
 }
 
 func TestSPDXExpressions(t *testing.T) {
@@ -402,7 +403,7 @@ func TestSPDXExpressions(t *testing.T) {
 	manifest := minimalManifest()
 	manifest.License = "MIT MAYBE Apache-2.0"
 	validationErr := requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/license", module.RuleSPDX)
+	requireViolation(t, validationErr, "/license", validation.RuleSPDX)
 }
 
 func TestNPMRangePrereleaseContract(t *testing.T) {
@@ -439,21 +440,21 @@ func minimalManifest() *module.Manifest {
 	}
 }
 
-func requireValidationErrors(t *testing.T, err error) *module.ValidationErrors {
+func requireValidationErrors(t *testing.T, err error) *validation.Errors {
 	t.Helper()
 	if err == nil {
 		t.Fatal("expected validation error")
 	}
 
-	var validationErr *module.ValidationErrors
+	var validationErr *validation.Errors
 	if !errors.As(err, &validationErr) {
-		t.Fatalf("expected *module.ValidationErrors, got %T: %v", err, err)
+		t.Fatalf("expected *validation.Errors, got %T: %v", err, err)
 	}
 
 	return validationErr
 }
 
-func requireViolation(t *testing.T, validationErr *module.ValidationErrors, path string, rule module.Rule) {
+func requireViolation(t *testing.T, validationErr *validation.Errors, path string, rule validation.Rule) {
 	t.Helper()
 	for _, violation := range validationErr.Violations {
 		if violation.Path == path && violation.Rule == rule {
@@ -464,7 +465,7 @@ func requireViolation(t *testing.T, validationErr *module.ValidationErrors, path
 	t.Fatalf("missing violation path=%q rule=%q in %#v", path, rule, validationErr.Violations)
 }
 
-func requireViolationDetails(t *testing.T, validationErr *module.ValidationErrors, path string, rule module.Rule, message string) {
+func requireViolationDetails(t *testing.T, validationErr *validation.Errors, path string, rule validation.Rule, message string) {
 	t.Helper()
 	for _, violation := range validationErr.Violations {
 		if violation.Path == path && violation.Rule == rule && violation.Message == message {

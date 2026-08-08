@@ -8,6 +8,8 @@ import (
 	"os"
 
 	"github.com/goccy/go-yaml"
+
+	"github.com/MontFerret/specs/pkg/validation"
 )
 
 // LoadFile reads, parses, and validates a JSON or YAML module manifest.
@@ -71,8 +73,8 @@ func decodeDocument(data []byte) (any, error) {
 
 	var document any
 	if err := decoder.Decode(&document); err != nil {
-		return nil, newValidationErrors([]Violation{{
-			Rule:    RuleDecode,
+		return nil, validation.NewErrors(validation.ScopeManifest, []validation.Violation{{
+			Rule:    validation.RuleDecode,
 			Message: err.Error(),
 		}})
 	}
@@ -80,23 +82,23 @@ func decodeDocument(data []byte) (any, error) {
 	var extra any
 	err := decoder.Decode(&extra)
 	if err == nil {
-		return nil, newValidationErrors([]Violation{{
-			Rule:    RuleDecode,
+		return nil, validation.NewErrors(validation.ScopeManifest, []validation.Violation{{
+			Rule:    validation.RuleDecode,
 			Message: "manifest must contain exactly one document",
 		}})
 	}
 
 	if err != io.EOF {
-		return nil, newValidationErrors([]Violation{{
-			Rule:    RuleDecode,
+		return nil, validation.NewErrors(validation.ScopeManifest, []validation.Violation{{
+			Rule:    validation.RuleDecode,
 			Message: err.Error(),
 		}})
 	}
 
 	normalized, err := json.Marshal(document)
 	if err != nil {
-		return nil, newValidationErrors([]Violation{{
-			Rule:    RuleDecode,
+		return nil, validation.NewErrors(validation.ScopeManifest, []validation.Violation{{
+			Rule:    validation.RuleDecode,
 			Message: "manifest mapping keys must be strings",
 		}})
 	}
@@ -106,8 +108,8 @@ func decodeDocument(data []byte) (any, error) {
 
 	var value any
 	if err := jsonDecoder.Decode(&value); err != nil {
-		return nil, newValidationErrors([]Violation{{
-			Rule:    RuleDecode,
+		return nil, validation.NewErrors(validation.ScopeManifest, []validation.Violation{{
+			Rule:    validation.RuleDecode,
 			Message: err.Error(),
 		}})
 	}

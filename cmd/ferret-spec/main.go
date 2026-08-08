@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/MontFerret/specs/pkg/module"
+	"github.com/MontFerret/specs/pkg/validation"
 )
 
 type (
@@ -22,10 +23,10 @@ type (
 	}
 
 	validationResult struct {
-		Source     string             `json:"source"`
-		Status     validationStatus   `json:"status"`
-		Violations []module.Violation `json:"violations,omitempty"`
-		Error      string             `json:"error,omitempty"`
+		Source     string                 `json:"source"`
+		Status     validationStatus       `json:"status"`
+		Violations []validation.Violation `json:"violations,omitempty"`
+		Error      string                 `json:"error,omitempty"`
 	}
 
 	application struct {
@@ -197,7 +198,7 @@ func (app application) validateSource(source string) validationResult {
 		}
 	}
 
-	var validationErr *module.ValidationErrors
+	var validationErr *validation.Errors
 	if errors.As(err, &validationErr) {
 		return validationResult{
 			Source:     label,
