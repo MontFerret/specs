@@ -14,6 +14,7 @@ import (
 	gomodule "golang.org/x/mod/module"
 
 	"github.com/MontFerret/specs/internal/jsondocument"
+	"github.com/MontFerret/specs/internal/registryidentity"
 	registryspec "github.com/MontFerret/specs/pkg/registry"
 	ferretschemas "github.com/MontFerret/specs/schemas"
 )
@@ -86,7 +87,7 @@ func validateDocument(schemaID string, document any) error {
 			return fmt.Errorf("validate registry artifact schema: %w", err)
 		}
 
-		return newValidationErrors(flattenSchemaErrors(validationErr))
+		return newValidationErrors(flattenSchemaErrors(validationErr, schemaID))
 	}
 
 	return nil
@@ -195,11 +196,11 @@ func artifactSchemaIDs() []string {
 	}
 }
 
-func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation {
+func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID string) []Violation {
 	if len(validationErr.Causes) > 0 {
 		violations := make([]Violation, 0, len(validationErr.Causes))
 		for _, cause := range validationErr.Causes {
-			violations = append(violations, flattenSchemaErrors(cause)...)
+			violations = append(violations, flattenSchemaErrors(cause, schemaID)...)
 		}
 
 		return violations
@@ -218,12 +219,44 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation 
 			message = output.Error.String()
 		}
 	}
+	if rule == Rule("pattern") {
+		if identityMessage := artifactIdentityMessage(schemaID, validationErr.InstanceLocation); identityMessage != "" {
+			message = identityMessage
+		}
+	}
 
 	return []Violation{{
 		Path:    jsonPointer(validationErr.InstanceLocation...),
 		Rule:    rule,
 		Message: message,
 	}}
+}
+
+func artifactIdentityMessage(schemaID string, location []string) string {
+	switch schemaID {
+	case ModuleIndexSchemaV1, CategorySchemaV1:
+		if len(location) == 3 && location[0] == "modules" && location[2] == "id" {
+			return registryidentity.CoordinateMessage
+		}
+	case ModuleSchemaV1:
+		if len(location) != 1 {
+			return ""
+		}
+		switch location[0] {
+		case "id":
+			return registryidentity.CoordinateMessage
+		case "owner":
+			return registryidentity.OwnerMessage
+		case "name":
+			return registryidentity.ModuleNameMessage
+		}
+	case VersionSchemaV1:
+		if len(location) == 1 && location[0] == "id" {
+			return registryidentity.CoordinateMessage
+		}
+	}
+
+	return ""
 }
 
 func validateRootIndexSemantics(index *RootIndex) error {

@@ -14,6 +14,7 @@ import (
 	"github.com/github/go-spdx/v2/spdxexp"
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 
+	"github.com/MontFerret/specs/internal/registryidentity"
 	ferretschemas "github.com/MontFerret/specs/schemas"
 )
 
@@ -91,12 +92,23 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation 
 			message = output.Error.String()
 		}
 	}
+	if rule == Rule("pattern") && isDistributionIdentityLocation(validationErr.InstanceLocation) {
+		message = registryidentity.CoordinateMessage
+	}
 
 	return []Violation{{
 		Path:    jsonPointer(validationErr.InstanceLocation...),
 		Rule:    rule,
 		Message: message,
 	}}
+}
+
+func isDistributionIdentityLocation(location []string) bool {
+	if len(location) == 1 {
+		return location[0] == "name"
+	}
+
+	return len(location) == 3 && location[0] == "dependencies" && location[2] == "module"
 }
 
 func moduleSchema() (*jsonschema.Schema, error) {

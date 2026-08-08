@@ -48,6 +48,7 @@ func (e *ValidationErrors) Error() string {
 	if len(e.Violations) == 1 {
 		violation := e.Violations[0]
 		location := violation.Path
+
 		if location == "" {
 			location = "document root"
 		}

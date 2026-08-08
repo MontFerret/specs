@@ -41,11 +41,13 @@ repository:
   directory: modules/db/sqlite
 ```
 
-`name` is the distribution identity used by registries and dependency
-declarations. `namespace` is the independent, case-sensitive runtime identity
-used by Ferret scripts. Namespace segments follow the normal FQL identifier
-grammar and are not restricted to uppercase. An exported namespace must equal
-or descend from the manifest's runtime namespace.
+`name` is the canonical lowercase `owner/module` distribution identity used by
+registries and dependency declarations. Validators reject mixed-case spelling;
+they do not silently lowercase it. `namespace` is the independent,
+case-sensitive runtime identity used by Ferret scripts. Namespace segments
+follow the normal FQL identifier grammar and are not restricted to uppercase.
+An exported namespace must equal or descend from the manifest's runtime
+namespace.
 
 `repository.url` identifies the source repository. Monorepo modules set the
 optional normalized relative `repository.directory`; standalone modules omit
@@ -169,6 +171,12 @@ Ferret Registry v1 defines the reviewed records used by a Git-backed module
 registry. A registry module manifest identifies an owner/name coordinate and an
 anonymous HTTPS Git source; a version record pins a strict semantic version and
 Git tag to an exact commit.
+
+Registry `owner` and `name` values use canonical lowercase spelling. Wherever a
+generated or consumed artifact stores an explicit module `id`, it must equal the
+exact `${owner}/${name}` value. Mixed-case source records and artifacts are
+invalid rather than normalized, and this distribution contract does not alter
+the independent case-sensitive Ferret runtime namespace.
 
 The canonical schemas are:
 

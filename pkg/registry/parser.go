@@ -14,16 +14,20 @@ func ParseModuleManifest(data []byte) (*ModuleManifest, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if err := validateModuleDocument(document); err != nil {
 		return nil, err
 	}
+
 	manifest, err := decodeValidated[ModuleManifest](document)
 	if err != nil {
 		return nil, fmt.Errorf("decode validated registry module manifest: %w", err)
 	}
+
 	if err := validateModuleSemantics(manifest); err != nil {
 		return nil, err
 	}
+
 	return manifest, nil
 }
 
@@ -34,6 +38,7 @@ func LoadModuleManifest(reader io.Reader) (*ModuleManifest, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read registry module manifest: %w", err)
 	}
+
 	return ParseModuleManifest(data)
 }
 
@@ -43,11 +48,14 @@ func LoadModuleManifestFile(filePath string) (*ModuleManifest, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open registry module manifest %q: %w", filePath, err)
 	}
+
 	defer file.Close()
+
 	manifest, err := LoadModuleManifest(file)
 	if err != nil {
 		return nil, fmt.Errorf("load registry module manifest %q: %w", filePath, err)
 	}
+
 	return manifest, nil
 }
 
@@ -57,16 +65,20 @@ func ParseVersionRecord(data []byte) (*VersionRecord, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if err := validateVersionDocument(document); err != nil {
 		return nil, err
 	}
+
 	record, err := decodeValidated[VersionRecord](document)
 	if err != nil {
 		return nil, fmt.Errorf("decode validated registry version record: %w", err)
 	}
+
 	if err := validateVersionSemantics(record); err != nil {
 		return nil, err
 	}
+
 	return record, nil
 }
 
@@ -77,6 +89,7 @@ func LoadVersionRecord(reader io.Reader) (*VersionRecord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read registry version record: %w", err)
 	}
+
 	return ParseVersionRecord(data)
 }
 
@@ -86,11 +99,14 @@ func LoadVersionRecordFile(filePath string) (*VersionRecord, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open registry version record %q: %w", filePath, err)
 	}
+
 	defer file.Close()
+
 	record, err := LoadVersionRecord(file)
 	if err != nil {
 		return nil, fmt.Errorf("load registry version record %q: %w", filePath, err)
 	}
+
 	return record, nil
 }
 

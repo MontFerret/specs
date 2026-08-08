@@ -26,15 +26,56 @@ func TestValidModuleManifest(t *testing.T) {
 	}
 }
 
-func TestInvalidOwnerAndModuleName(t *testing.T) {
-	for name, mutate := range map[string]func(*registry.ModuleManifest){
-		"owner": func(manifest *registry.ModuleManifest) { manifest.Owner = "MontFerret" },
-		"name":  func(manifest *registry.ModuleManifest) { manifest.Name = "-archive" },
+func TestRegistryIdentityRequiresCanonicalLowercase(t *testing.T) {
+	if err := registry.ValidateModuleManifest(validModuleManifest()); err != nil {
+		t.Fatalf("canonical lowercase identity should be valid: %v", err)
+	}
+
+	for _, test := range []struct {
+		name    string
+		path    string
+		message string
+		mutate  func(*registry.ModuleManifest)
+	}{
+		{
+			name:    "uppercase owner",
+			path:    "/owner",
+			message: "registry owner must use canonical lowercase spelling",
+			mutate:  func(manifest *registry.ModuleManifest) { manifest.Owner = "MONTFERRET" },
+		},
+		{
+			name:    "mixed-case owner",
+			path:    "/owner",
+			message: "registry owner must use canonical lowercase spelling",
+			mutate:  func(manifest *registry.ModuleManifest) { manifest.Owner = "MontFerret" },
+		},
+		{
+			name:    "uppercase module name",
+			path:    "/name",
+			message: "registry module name must use canonical lowercase spelling",
+			mutate:  func(manifest *registry.ModuleManifest) { manifest.Name = "ARCHIVE" },
+		},
+		{
+			name:    "mixed-case module name",
+			path:    "/name",
+			message: "registry module name must use canonical lowercase spelling",
+			mutate:  func(manifest *registry.ModuleManifest) { manifest.Name = "Archive" },
+		},
 	} {
-		t.Run(name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			manifest := validModuleManifest()
-			mutate(manifest)
-			requireValidationErrors(t, registry.ValidateModuleManifest(manifest))
+			test.mutate(manifest)
+
+			validationErr := requireValidationErrors(t, registry.ValidateModuleManifest(manifest))
+			requireViolationDetails(t, validationErr, test.path, registry.Rule("pattern"), test.message)
+
+			data, err := json.Marshal(manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = registry.ParseModuleManifest(data)
+			validationErr = requireValidationErrors(t, err)
+			requireViolationDetails(t, validationErr, test.path, registry.Rule("pattern"), test.message)
 		})
 	}
 }
@@ -246,6 +287,16 @@ func requireViolation(t *testing.T, validationErr *registry.ValidationErrors, pa
 		}
 	}
 	t.Fatalf("missing violation at %q in %#v", path, validationErr.Violations)
+}
+
+func requireViolationDetails(t *testing.T, validationErr *registry.ValidationErrors, path string, rule registry.Rule, message string) {
+	t.Helper()
+	for _, violation := range validationErr.Violations {
+		if violation.Path == path && violation.Rule == rule && violation.Message == message {
+			return
+		}
+	}
+	t.Fatalf("missing violation at %q with rule %q and message %q in %#v", path, rule, message, validationErr.Violations)
 }
 
 func requireRule(t *testing.T, validationErr *registry.ValidationErrors, rule registry.Rule) {

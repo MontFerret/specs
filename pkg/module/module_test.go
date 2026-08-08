@@ -315,6 +315,41 @@ func TestRepositoryDirectoryNormalization(t *testing.T) {
 	}
 }
 
+func TestDistributionIdentityRequiresCanonicalLowercase(t *testing.T) {
+	if err := module.Validate(minimalManifest()); err != nil {
+		t.Fatalf("canonical lowercase identity should be valid: %v", err)
+	}
+
+	const message = "module identity must use canonical lowercase owner/name spelling; each segment must start and end with a lowercase letter or digit"
+	for _, name := range []string{
+		"MONTFERRET/archive",
+		"MontFerret/archive",
+		"montferret/ARCHIVE",
+		"montferret/Archive",
+	} {
+		t.Run(name, func(t *testing.T) {
+			manifest := minimalManifest()
+			manifest.Name = name
+
+			validationErr := requireValidationErrors(t, module.Validate(manifest))
+			requireViolationDetails(t, validationErr, "/name", module.Rule("pattern"), message)
+
+			data, err := json.Marshal(manifest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = module.Parse(data)
+			validationErr = requireValidationErrors(t, err)
+			requireViolationDetails(t, validationErr, "/name", module.Rule("pattern"), message)
+		})
+	}
+
+	manifest := minimalManifest()
+	manifest.Dependencies = []module.Dependency{{Module: "MontFerret/archive", Version: "^1.0.0"}}
+	validationErr := requireValidationErrors(t, module.Validate(manifest))
+	requireViolationDetails(t, validationErr, "/dependencies/0/module", module.Rule("pattern"), message)
+}
+
 func TestNamespaceCasingFollowsFQL(t *testing.T) {
 	for _, namespace := range []string{"db::sqlite", "Db::SQLite", "DB::SQLITE"} {
 		manifest := minimalManifest()
@@ -427,6 +462,17 @@ func requireViolation(t *testing.T, validationErr *module.ValidationErrors, path
 	}
 
 	t.Fatalf("missing violation path=%q rule=%q in %#v", path, rule, validationErr.Violations)
+}
+
+func requireViolationDetails(t *testing.T, validationErr *module.ValidationErrors, path string, rule module.Rule, message string) {
+	t.Helper()
+	for _, violation := range validationErr.Violations {
+		if violation.Path == path && violation.Rule == rule && violation.Message == message {
+			return
+		}
+	}
+
+	t.Fatalf("missing violation path=%q rule=%q message=%q in %#v", path, rule, message, validationErr.Violations)
 }
 
 type failingReader struct{}

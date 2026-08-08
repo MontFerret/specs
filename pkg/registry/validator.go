@@ -13,6 +13,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 
+	"github.com/MontFerret/specs/internal/registryidentity"
 	ferretschemas "github.com/MontFerret/specs/schemas"
 )
 
@@ -36,9 +37,11 @@ func ValidateModuleManifest(manifest *ModuleManifest) error {
 	if err != nil {
 		return fmt.Errorf("encode registry module manifest: %w", err)
 	}
+
 	if err := validateModuleDocument(document); err != nil {
 		return err
 	}
+
 	return validateModuleSemantics(manifest)
 }
 
@@ -48,9 +51,11 @@ func ValidateVersionRecord(record *VersionRecord) error {
 	if err != nil {
 		return fmt.Errorf("encode registry version record: %w", err)
 	}
+
 	if err := validateVersionDocument(document); err != nil {
 		return err
 	}
+
 	return validateVersionSemantics(record)
 }
 
@@ -59,12 +64,15 @@ func encodedDocument(value any) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
+
 	var document any
 	if err := decoder.Decode(&document); err != nil {
 		return nil, err
 	}
+
 	return document, nil
 }
 
@@ -73,7 +81,8 @@ func validateModuleDocument(document any) error {
 	if err != nil {
 		return err
 	}
-	return validateSchema(schema, document)
+
+	return validateSchema(schema, document, ModuleManifestSchemaV1)
 }
 
 func validateVersionDocument(document any) error {
@@ -81,29 +90,35 @@ func validateVersionDocument(document any) error {
 	if err != nil {
 		return err
 	}
-	return validateSchema(schema, document)
+
+	return validateSchema(schema, document, VersionRecordSchemaV1)
 }
 
-func validateSchema(schema *jsonschema.Schema, document any) error {
+func validateSchema(schema *jsonschema.Schema, document any, schemaID string) error {
 	err := schema.Validate(document)
 	if err == nil {
 		return nil
 	}
+
 	var validationErr *jsonschema.ValidationError
 	if !errors.As(err, &validationErr) {
 		return fmt.Errorf("validate registry schema: %w", err)
 	}
-	return newValidationErrors(flattenSchemaErrors(validationErr))
+
+	return newValidationErrors(flattenSchemaErrors(validationErr, schemaID))
 }
 
-func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation {
+func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID string) []Violation {
 	if len(validationErr.Causes) > 0 {
 		violations := make([]Violation, 0, len(validationErr.Causes))
+
 		for _, cause := range validationErr.Causes {
-			violations = append(violations, flattenSchemaErrors(cause)...)
+			violations = append(violations, flattenSchemaErrors(cause, schemaID)...)
 		}
+
 		return violations
 	}
+
 	rule := RuleSchema
 	message := "document does not match the registry schema"
 	if validationErr.ErrorKind != nil {
@@ -111,11 +126,22 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []Violation 
 		if len(keywordPath) > 0 {
 			rule = Rule(keywordPath[len(keywordPath)-1])
 		}
+
 		output := validationErr.BasicOutput()
 		if output.Error != nil {
 			message = output.Error.String()
 		}
 	}
+
+	if rule == Rule("pattern") && schemaID == ModuleManifestSchemaV1 && len(validationErr.InstanceLocation) == 1 {
+		switch validationErr.InstanceLocation[0] {
+		case "owner":
+			message = registryidentity.OwnerMessage
+		case "name":
+			message = registryidentity.ModuleNameMessage
+		}
+	}
+
 	return []Violation{{
 		Path:    jsonPointer(validationErr.InstanceLocation...),
 		Rule:    rule,
@@ -129,6 +155,7 @@ func compiledModuleSchema() (*jsonschema.Schema, error) {
 			ModuleManifestSchemaV1: moduleSchemaPath,
 		})
 	})
+
 	return moduleSchemaV1, moduleSchemaErr
 }
 
@@ -139,6 +166,7 @@ func compiledVersionSchema() (*jsonschema.Schema, error) {
 			VersionRecordSchemaV1:                               versionSchemaPath,
 		})
 	})
+
 	return versionSchemaV1, versionSchemaErr
 }
 
@@ -147,19 +175,23 @@ func compileSchema(schemaID string, resources map[string]string) (*jsonschema.Sc
 	compiler.DefaultDraft(jsonschema.Draft2020)
 	compiler.AssertFormat()
 	compiler.UseLoader(offlineLoader{})
+
 	for id, schemaPath := range resources {
 		document, err := readSchema(schemaPath)
 		if err != nil {
 			return nil, err
 		}
+
 		if err := compiler.AddResource(id, document); err != nil {
 			return nil, fmt.Errorf("register embedded schema %q: %w", schemaPath, err)
 		}
 	}
+
 	schema, err := compiler.Compile(schemaID)
 	if err != nil {
 		return nil, fmt.Errorf("compile embedded registry schema %q: %w", schemaID, err)
 	}
+
 	return schema, nil
 }
 
@@ -168,12 +200,15 @@ func readSchema(schemaPath string) (any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read embedded schema %q: %w", schemaPath, err)
 	}
+
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
+
 	var document any
 	if err := decoder.Decode(&document); err != nil {
 		return nil, fmt.Errorf("decode embedded schema %q: %w", schemaPath, err)
 	}
+
 	return document, nil
 }
 
@@ -185,25 +220,31 @@ func (offlineLoader) Load(schemaURL string) (any, error) {
 
 func validateModuleSemantics(manifest *ModuleManifest) error {
 	violations := make([]Violation, 0, 2)
+
 	if err := validateRepositoryURL(manifest.Source.Repository); err != nil {
 		violations = append(violations, Violation{Path: jsonPointer("source", "repository"), Rule: RuleRepositoryURL, Message: err.Error()})
 	}
+
 	if manifest.Source.Path != "" {
 		if err := validateSourcePath(manifest.Source.Path); err != nil {
 			violations = append(violations, Violation{Path: jsonPointer("source", "path"), Rule: RuleSourcePath, Message: err.Error()})
 		}
 	}
+
 	return newValidationErrors(violations)
 }
 
 func validateVersionSemantics(record *VersionRecord) error {
 	violations := make([]Violation, 0, 2)
+
 	if _, err := semver.StrictNewVersion(record.Version); err != nil {
 		violations = append(violations, Violation{Path: jsonPointer("version"), Rule: RuleSemVer, Message: "version must be a strict Semantic Versioning 2.0.0 version"})
 	}
+
 	if err := validateTag(record.Tag); err != nil {
 		violations = append(violations, Violation{Path: jsonPointer("tag"), Rule: RuleTag, Message: err.Error()})
 	}
+
 	return newValidationErrors(violations)
 }
 
@@ -212,12 +253,15 @@ func validateRepositoryURL(value string) error {
 	if err != nil {
 		return fmt.Errorf("repository must be a valid absolute HTTPS URL")
 	}
+
 	if parsed.Scheme != "https" || parsed.Hostname() == "" || parsed.Path == "" || parsed.Path == "/" {
 		return fmt.Errorf("repository must be a valid absolute HTTPS URL with a repository path")
 	}
+
 	if parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" {
 		return fmt.Errorf("repository URL must not contain credentials, a query, or a fragment")
 	}
+
 	return nil
 }
 
@@ -225,16 +269,19 @@ func validateSourcePath(value string) error {
 	if strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") || strings.Contains(value, "\\") {
 		return fmt.Errorf("source path must be a normalized relative slash-separated path")
 	}
-	for _, segment := range strings.Split(value, "/") {
+
+	for segment := range strings.SplitSeq(value, "/") {
 		if segment == "" || segment == "." || segment == ".." {
 			return fmt.Errorf("source path must not contain empty, current-directory, or parent-directory segments")
 		}
+
 		for _, character := range segment {
 			if unicode.IsControl(character) {
 				return fmt.Errorf("source path must not contain control characters")
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -242,18 +289,22 @@ func validateTag(value string) error {
 	if value == "" || strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") || strings.HasSuffix(value, ".") || strings.Contains(value, "//") {
 		return fmt.Errorf("tag must be a valid Git tag name")
 	}
+
 	if strings.Contains(value, "..") || strings.Contains(value, "@{") {
 		return fmt.Errorf("tag must be a valid Git tag name")
 	}
+
 	for _, character := range value {
 		if unicode.IsControl(character) || strings.ContainsRune(" ~^:?*[\\", character) {
 			return fmt.Errorf("tag must be a valid Git tag name")
 		}
 	}
-	for _, component := range strings.Split(value, "/") {
+
+	for component := range strings.SplitSeq(value, "/") {
 		if strings.HasPrefix(component, ".") || strings.HasSuffix(component, ".lock") {
 			return fmt.Errorf("tag must be a valid Git tag name")
 		}
 	}
+
 	return nil
 }

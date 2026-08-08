@@ -62,6 +62,27 @@ func TestRunReportsEverySemanticViolation(t *testing.T) {
 	}
 }
 
+func TestRunReportsCanonicalLowercaseIdentityRequirement(t *testing.T) {
+	input := strings.Replace(
+		string(mustReadFile(t, fixturePath("valid", "minimal.yaml"))),
+		"name: montferret/sqlite",
+		"name: MontFerret/Archive",
+		1,
+	)
+
+	code, stdout, stderr := runCLI(t, []string{"validate", "module", "-"}, []byte(input))
+	if code != exitInvalid {
+		t.Fatalf("expected exit code %d, got %d", exitInvalid, code)
+	}
+	if stdout != "" {
+		t.Fatalf("unexpected stdout: %s", stdout)
+	}
+	want := "<stdin>:/name [pattern] module identity must use canonical lowercase owner/name spelling; each segment must start and end with a lowercase letter or digit\n"
+	if stderr != want {
+		t.Fatalf("unexpected stderr:\n%s\nwant:\n%s", stderr, want)
+	}
+}
+
 func TestRunUsesDollarForDocumentRoot(t *testing.T) {
 	code, stdout, stderr := runCLI(
 		t,
