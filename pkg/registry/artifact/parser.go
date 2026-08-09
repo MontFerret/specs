@@ -23,6 +23,11 @@ func ParseVersionDocument(data []byte) (*VersionDocument, error) {
 	return parseArtifact(data, VersionSchemaV1, validateVersionDocumentSemantics)
 }
 
+// ParseAPIReference parses and validates an API Reference artifact.
+func ParseAPIReference(data []byte) (*APIReference, error) {
+	return parseArtifact(data, APISchemaV1, validateAPIReferenceSemantics)
+}
+
 func ParseCategoryIndex(data []byte) (*CategoryIndex, error) {
 	return parseArtifact(data, CategoryIndexSchemaV1, validateCategoryIndexSemantics)
 }

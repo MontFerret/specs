@@ -29,6 +29,9 @@ func TestArtifactRoundTrips(t *testing.T) {
 	versionDocument.Content["readme"] = "./README.md"
 	roundTrip(t, versionDocument, artifact.ParseVersionDocument)
 
+	apiReference := validAPIReference()
+	roundTrip(t, apiReference, artifact.ParseAPIReference)
+
 	categoryIndex := validCategoryIndex()
 	roundTrip(t, categoryIndex, artifact.ParseCategoryIndex)
 
@@ -215,6 +218,18 @@ func TestModuleIdentityRequiresCanonicalLowercase(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "API Reference",
+			path: "/id",
+			errors: func(id string) []error {
+				reference := validAPIReference()
+				reference.ID = id
+				return []error{
+					artifact.ValidateAPIReference(reference),
+					parseError(t, reference, artifact.ParseAPIReference),
+				}
+			},
+		},
 	}
 
 	for _, surface := range surfaces {
@@ -296,6 +311,7 @@ func TestNilArtifactsReturnStructuredErrors(t *testing.T) {
 	requireValidationErrors(t, artifact.ValidateModuleIndex(nil))
 	requireValidationErrors(t, artifact.ValidateModuleDocument(nil))
 	requireValidationErrors(t, artifact.ValidateVersionDocument(nil))
+	requireValidationErrors(t, artifact.ValidateAPIReference(nil))
 	requireValidationErrors(t, artifact.ValidateCategoryIndex(nil))
 	requireValidationErrors(t, artifact.ValidateCategoryDocument(nil))
 	requireValidationErrors(t, artifact.ValidatePluginIndex(nil))
@@ -356,8 +372,39 @@ func validVersionDocument() *artifact.VersionDocument {
 		},
 		Package: artifact.VersionPackage{Path: "example.com/archive"},
 		Content: map[string]string{
+			artifact.ContentKeyAPI:               "./api.json",
 			artifact.ContentKeyDocumentation:     "./docs.md",
 			artifact.ContentKeyDocumentationHTML: "./docs.html",
+		},
+	}
+}
+
+func validAPIReference() *artifact.APIReference {
+	return &artifact.APIReference{
+		SchemaVersion: artifact.SchemaVersion,
+		ID:            "acme/archive",
+		Version:       "1.0.0",
+		Namespaces: []artifact.APINamespace{
+			{
+				Name: "",
+				Functions: []artifact.APIFunction{{
+					Name: "VERSION",
+					Signatures: []artifact.APIFunctionSignature{{
+						Parameters:    []string{},
+						Documentation: "Version returns the archive module version.",
+					}},
+				}},
+			},
+			{
+				Name: "ARCHIVE",
+				Functions: []artifact.APIFunction{{
+					Name: "READ",
+					Signatures: []artifact.APIFunctionSignature{
+						{Parameters: []string{"path"}},
+						{Parameters: []string{"args"}, Variadic: true},
+					},
+				}},
+			},
 		},
 	}
 }

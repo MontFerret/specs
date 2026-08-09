@@ -15,6 +15,7 @@ const (
 	ModuleIndexSchemaV1   = "https://schemas.ferretlang.org/registry/artifact/module-index/v1.json"
 	ModuleSchemaV1        = "https://schemas.ferretlang.org/registry/artifact/module/v1.json"
 	VersionSchemaV1       = "https://schemas.ferretlang.org/registry/artifact/version/v1.json"
+	APISchemaV1           = "https://schemas.ferretlang.org/registry/artifact/api/v1.json"
 	CategoryIndexSchemaV1 = "https://schemas.ferretlang.org/registry/artifact/category-index/v1.json"
 	CategorySchemaV1      = "https://schemas.ferretlang.org/registry/artifact/category/v1.json"
 	PluginIndexSchemaV1   = "https://schemas.ferretlang.org/registry/artifact/plugin-index/v1.json"
@@ -25,6 +26,7 @@ const (
 
 	ContentKeyDocumentation     = "documentation"
 	ContentKeyDocumentationHTML = "documentationHtml"
+	ContentKeyAPI               = "api"
 )
 
 type (
@@ -123,5 +125,33 @@ type (
 		Repository string `json:"repository"`
 		Path       string `json:"path,omitempty"`
 		Commit     string `json:"commit"`
+	}
+
+	// APIReference contains the statically derived Ferret-facing API for one module version.
+	APIReference struct {
+		SchemaVersion int            `json:"schemaVersion"`
+		ID            string         `json:"id"`
+		Version       string         `json:"version"`
+		Namespaces    []APINamespace `json:"namespaces"`
+	}
+
+	// APINamespace contains the functions registered in one Ferret namespace.
+	// An empty name identifies the global namespace.
+	APINamespace struct {
+		Name      string        `json:"name"`
+		Functions []APIFunction `json:"functions"`
+	}
+
+	// APIFunction contains every registered overload for one Ferret function name.
+	APIFunction struct {
+		Name       string                 `json:"name"`
+		Signatures []APIFunctionSignature `json:"signatures"`
+	}
+
+	// APIFunctionSignature describes one fixed-arity or variadic function definition.
+	APIFunctionSignature struct {
+		Parameters    []string `json:"parameters"`
+		Variadic      bool     `json:"variadic,omitempty"`
+		Documentation string   `json:"documentation,omitempty"`
 	}
 )

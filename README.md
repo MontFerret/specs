@@ -197,6 +197,7 @@ https://schemas.ferretlang.org/registry/artifact/root/v1.json
 https://schemas.ferretlang.org/registry/artifact/module-index/v1.json
 https://schemas.ferretlang.org/registry/artifact/module/v1.json
 https://schemas.ferretlang.org/registry/artifact/version/v1.json
+https://schemas.ferretlang.org/registry/artifact/api/v1.json
 https://schemas.ferretlang.org/registry/artifact/category-index/v1.json
 https://schemas.ferretlang.org/registry/artifact/category/v1.json
 https://schemas.ferretlang.org/registry/artifact/plugin-index/v1.json

@@ -42,6 +42,11 @@ func ValidateVersionDocument(document *VersionDocument) error {
 	return validateArtifact(document, VersionSchemaV1, validateVersionDocumentSemantics)
 }
 
+// ValidateAPIReference validates an API Reference artifact.
+func ValidateAPIReference(reference *APIReference) error {
+	return validateArtifact(reference, APISchemaV1, validateAPIReferenceSemantics)
+}
+
 func ValidateCategoryIndex(index *CategoryIndex) error {
 	return validateArtifact(index, CategoryIndexSchemaV1, validateCategoryIndexSemantics)
 }
@@ -191,10 +196,84 @@ func artifactSchemaIDs() []string {
 		ModuleIndexSchemaV1,
 		ModuleSchemaV1,
 		VersionSchemaV1,
+		APISchemaV1,
 		CategoryIndexSchemaV1,
 		CategorySchemaV1,
 		PluginIndexSchemaV1,
 	}
+}
+
+func validateAPIReferenceSemantics(reference *APIReference) error {
+	violations := make([]validation.Violation, 0)
+
+	owner, name, _ := strings.Cut(reference.ID, "/")
+	manifest := &registryspec.ModuleManifest{
+		Schema: registryspec.ModuleManifestSchemaV1,
+		Owner:  owner,
+		Name:   name,
+		Source: registryspec.Source{Repository: "https://example.invalid/module.git"},
+	}
+	violations = appendRegistryViolations(violations, registryspec.ValidateModuleManifest(manifest), "")
+
+	record := &registryspec.VersionRecord{
+		Schema:  registryspec.VersionRecordSchemaV1,
+		Version: reference.Version,
+		Tag:     "v" + reference.Version,
+		Commit:  strings.Repeat("0", 40),
+	}
+	violations = appendRegistryViolations(violations, registryspec.ValidateVersionRecord(record), "")
+
+	seenNamespaces := make(map[string]struct{}, len(reference.Namespaces))
+	for namespaceIndex, namespace := range reference.Namespaces {
+		namespacePath := validation.JSONPointer("namespaces", strconv.Itoa(namespaceIndex))
+		if _, exists := seenNamespaces[namespace.Name]; exists {
+			violations = append(violations, validation.Violation{
+				Path:    namespacePath + "/name",
+				Rule:    validation.RuleDuplicate,
+				Message: fmt.Sprintf("namespace %q is duplicated", namespace.Name),
+			})
+		}
+		seenNamespaces[namespace.Name] = struct{}{}
+
+		seenFunctions := make(map[string]struct{}, len(namespace.Functions))
+		for functionIndex, function := range namespace.Functions {
+			functionPath := namespacePath + "/functions/" + strconv.Itoa(functionIndex)
+			if _, exists := seenFunctions[function.Name]; exists {
+				violations = append(violations, validation.Violation{
+					Path:    functionPath + "/name",
+					Rule:    validation.RuleDuplicate,
+					Message: fmt.Sprintf("function %q is duplicated in namespace %q", function.Name, namespace.Name),
+				})
+			}
+			seenFunctions[function.Name] = struct{}{}
+
+			seenSignatures := make(map[string]struct{}, len(function.Signatures))
+			for signatureIndex, signature := range function.Signatures {
+				signaturePath := functionPath + "/signatures/" + strconv.Itoa(signatureIndex)
+				key := strconv.Itoa(len(signature.Parameters))
+				if signature.Variadic {
+					key = "variadic"
+					if len(signature.Parameters) != 1 {
+						violations = append(violations, validation.Violation{
+							Path:    signaturePath + "/parameters",
+							Rule:    validation.RuleSchema,
+							Message: "a variadic signature must declare exactly one parameter",
+						})
+					}
+				}
+				if _, exists := seenSignatures[key]; exists {
+					violations = append(violations, validation.Violation{
+						Path:    signaturePath,
+						Rule:    validation.RuleDuplicate,
+						Message: fmt.Sprintf("function %q has more than one %s signature", function.Name, key),
+					})
+				}
+				seenSignatures[key] = struct{}{}
+			}
+		}
+	}
+
+	return validation.NewErrors(validation.ScopeRegistryArtifact, violations)
 }
 
 func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID string) []validation.Violation {
@@ -252,6 +331,10 @@ func artifactIdentityMessage(schemaID string, location []string) string {
 			return registryidentity.ModuleNameMessage
 		}
 	case VersionSchemaV1:
+		if len(location) == 1 && location[0] == "id" {
+			return registryidentity.CoordinateMessage
+		}
+	case APISchemaV1:
 		if len(location) == 1 && location[0] == "id" {
 			return registryidentity.CoordinateMessage
 		}
