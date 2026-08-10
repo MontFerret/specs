@@ -32,7 +32,13 @@ type (
 	// RootIndex discovers the artifact indexes in a generated distribution.
 	RootIndex struct {
 		SchemaVersion int               `json:"schemaVersion"`
+		Source        RootSource        `json:"source"`
 		Artifacts     map[string]string `json:"artifacts"`
+	}
+
+	// RootSource identifies the authoritative Registry source revision.
+	RootSource struct {
+		Commit string `json:"commit"`
 	}
 
 	// ModuleIndex lists compact references to every registered module.

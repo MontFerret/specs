@@ -72,9 +72,9 @@ func TestEmptyAndPrereleaseOnlyIndexesAreValid(t *testing.T) {
 
 func TestParsingIsStrict(t *testing.T) {
 	for name, data := range map[string]string{
-		"duplicate key":     `{"schemaVersion":1,"schemaVersion":1,"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"}}`,
-		"trailing document": `{"schemaVersion":1,"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"}} {}`,
-		"unknown field":     `{"schemaVersion":1,"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"},"extra":true}`,
+		"duplicate key":     `{"schemaVersion":1,"schemaVersion":1,"source":{"commit":"0123456789abcdef0123456789abcdef01234567"},"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"}}`,
+		"trailing document": `{"schemaVersion":1,"source":{"commit":"0123456789abcdef0123456789abcdef01234567"},"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"}} {}`,
+		"unknown field":     `{"schemaVersion":1,"source":{"commit":"0123456789abcdef0123456789abcdef01234567"},"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"},"extra":true}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, err := artifact.ParseRootIndex([]byte(data))
@@ -84,11 +84,36 @@ func TestParsingIsStrict(t *testing.T) {
 }
 
 func TestUnsupportedSchemaVersionIsTyped(t *testing.T) {
-	_, err := artifact.ParseRootIndex([]byte(`{"schemaVersion":2,"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"}}`))
+	_, err := artifact.ParseRootIndex([]byte(`{"schemaVersion":2,"source":{"commit":"0123456789abcdef0123456789abcdef01234567"},"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"}}`))
 	var versionErr *artifact.UnsupportedVersionError
 	if !errors.As(err, &versionErr) || versionErr.Version != 2 {
 		t.Fatalf("expected unsupported version 2, got %T: %v", err, err)
 	}
+}
+
+func TestRootSourceCommitIsRequiredAndValidated(t *testing.T) {
+	for name, commit := range map[string]string{
+		"empty":      "",
+		"short":      "01234567",
+		"uppercase":  "0123456789ABCDEF0123456789ABCDEF01234567",
+		"not hex":    "z123456789abcdef0123456789abcdef01234567",
+		"wrong size": "0123456789abcdef0123456789abcdef0123456789abcdef",
+	} {
+		t.Run(name, func(t *testing.T) {
+			root := validRootIndex()
+			root.Source.Commit = commit
+			requireValidationErrors(t, artifact.ValidateRootIndex(root))
+		})
+	}
+
+	root := validRootIndex()
+	root.Source.Commit = strings.Repeat("a", 64)
+	if err := artifact.ValidateRootIndex(root); err != nil {
+		t.Fatalf("SHA-256 commit should be valid: %v", err)
+	}
+
+	_, err := artifact.ParseRootIndex([]byte(`{"schemaVersion":1,"artifacts":{"categories":"/categories.json","modules":"/modules/index.json","plugins":"/plugins/index.json"}}`))
+	requireValidationErrors(t, err)
 }
 
 func TestCanonicalKeysAndReservedPluginsAreEnforced(t *testing.T) {
@@ -322,6 +347,7 @@ func TestNilArtifactsReturnStructuredErrors(t *testing.T) {
 func validRootIndex() *artifact.RootIndex {
 	return &artifact.RootIndex{
 		SchemaVersion: artifact.SchemaVersion,
+		Source:        artifact.RootSource{Commit: commitSHA1},
 		Artifacts: map[string]string{
 			artifact.ArtifactKeyCategories: "/categories.json",
 			artifact.ArtifactKeyModules:    "/modules/index.json",

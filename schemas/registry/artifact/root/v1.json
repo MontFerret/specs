@@ -7,11 +7,15 @@
   "additionalProperties": false,
   "required": [
     "schemaVersion",
+    "source",
     "artifacts"
   ],
   "properties": {
     "schemaVersion": {
       "const": 1
+    },
+    "source": {
+      "$ref": "#/$defs/source"
     },
     "artifacts": {
       "type": "object",
@@ -40,6 +44,19 @@
     }
   },
   "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "commit"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"
+        }
+      }
+    },
     "artifactReference": {
       "type": "string",
       "minLength": 1,
