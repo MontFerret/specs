@@ -203,17 +203,26 @@ https://schemas.ferretlang.org/registry/artifact/category/v1.json
 https://schemas.ferretlang.org/registry/artifact/plugin-index/v1.json
 ```
 
-The `pkg/registry/artifact` package owns the corresponding wire types, strict
-JSON parsing, and local validation. Registry-checkout layout, remote Git
-inspection, publication history, distribution generation, hosting, and
-cross-document navigation remain responsibilities of the registry
-implementation rather than these portable contracts.
+The `pkg/registry/artifact` package owns the Registry document types other than
+the API Reference, plus their strict JSON parsing and local validation. The
+canonical `pkg/api` package owns the API Reference types, structured Ferret API
+documentation parsing, strict JSON parsing, and local validation. Deprecated
+aliases and forwards remain in `pkg/registry/artifact` for Go source
+compatibility; they delegate to `pkg/api`.
+
+Registry-checkout layout, Go source inspection, remote Git inspection,
+publication history, distribution generation, hosting, and cross-document
+navigation remain responsibilities of the Registry implementation rather than
+these portable contracts.
 
 The API Reference artifact describes each registered function signature with
 ordered Ferret-facing parameter objects. A parameter always has a name and may
 also carry a Ferret type expression and description. Signatures may include
 prose, a return value, ordered visible failures, and a deprecation message.
 Ferret type and error expressions are opaque strings rather than Go types.
+See [Ferret API Documentation v1](docs/api-documentation-v1.md) for the exact
+structured-comment grammar, parser behavior, error contract, and API Reference
+versioning policy.
 
 The older registry placeholder at `/registry/v1.json` and the plugin v1 file
 remain reserved and deliberately reject every document.

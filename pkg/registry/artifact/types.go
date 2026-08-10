@@ -15,7 +15,6 @@ const (
 	ModuleIndexSchemaV1   = "https://schemas.ferretlang.org/registry/artifact/module-index/v1.json"
 	ModuleSchemaV1        = "https://schemas.ferretlang.org/registry/artifact/module/v1.json"
 	VersionSchemaV1       = "https://schemas.ferretlang.org/registry/artifact/version/v1.json"
-	APISchemaV1           = "https://schemas.ferretlang.org/registry/artifact/api/v1.json"
 	CategoryIndexSchemaV1 = "https://schemas.ferretlang.org/registry/artifact/category-index/v1.json"
 	CategorySchemaV1      = "https://schemas.ferretlang.org/registry/artifact/category/v1.json"
 	PluginIndexSchemaV1   = "https://schemas.ferretlang.org/registry/artifact/plugin-index/v1.json"
@@ -125,55 +124,5 @@ type (
 		Repository string `json:"repository"`
 		Path       string `json:"path,omitempty"`
 		Commit     string `json:"commit"`
-	}
-
-	// APIReference contains the statically derived Ferret-facing API for one module version.
-	APIReference struct {
-		SchemaVersion int            `json:"schemaVersion"`
-		ID            string         `json:"id"`
-		Version       string         `json:"version"`
-		Namespaces    []APINamespace `json:"namespaces"`
-	}
-
-	// APINamespace contains the functions registered in one Ferret namespace.
-	// An empty name identifies the global namespace.
-	APINamespace struct {
-		Name      string        `json:"name"`
-		Functions []APIFunction `json:"functions"`
-	}
-
-	// APIFunction contains every registered overload for one Ferret function name.
-	APIFunction struct {
-		Name       string                 `json:"name"`
-		Signatures []APIFunctionSignature `json:"signatures"`
-	}
-
-	// APIFunctionSignature describes one fixed-arity or variadic function definition.
-	APIFunctionSignature struct {
-		Parameters  []APIParameter   `json:"parameters"`
-		Variadic    bool             `json:"variadic,omitempty"`
-		Description string           `json:"description,omitempty"`
-		Return      *APIReturn       `json:"return,omitempty"`
-		Throws      []APIThrownError `json:"throws,omitempty"`
-		Deprecated  string           `json:"deprecated,omitempty"`
-	}
-
-	// APIParameter describes one Ferret-facing function parameter.
-	APIParameter struct {
-		Name        string `json:"name"`
-		Type        string `json:"type,omitempty"`
-		Description string `json:"description,omitempty"`
-	}
-
-	// APIReturn describes a Ferret-facing function result.
-	APIReturn struct {
-		Type        string `json:"type"`
-		Description string `json:"description"`
-	}
-
-	// APIThrownError describes one Ferret-visible function failure.
-	APIThrownError struct {
-		Error       string `json:"error"`
-		Description string `json:"description"`
 	}
 )

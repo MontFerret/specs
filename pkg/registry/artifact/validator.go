@@ -46,11 +46,6 @@ func ValidateVersionDocument(document *VersionDocument) error {
 	return validateArtifact(document, VersionSchemaV1, validateVersionDocumentSemantics)
 }
 
-// ValidateAPIReference validates an API Reference artifact.
-func ValidateAPIReference(reference *APIReference) error {
-	return validateArtifact(reference, APISchemaV1, validateAPIReferenceSemantics)
-}
-
 // ValidateCategoryIndex validates a programmatically constructed Registry category index artifact.
 func ValidateCategoryIndex(index *CategoryIndex) error {
 	return validateArtifact(index, CategoryIndexSchemaV1, validateCategoryIndexSemantics)
@@ -203,170 +198,10 @@ func artifactSchemaIDs() []string {
 		ModuleIndexSchemaV1,
 		ModuleSchemaV1,
 		VersionSchemaV1,
-		APISchemaV1,
 		CategoryIndexSchemaV1,
 		CategorySchemaV1,
 		PluginIndexSchemaV1,
 	}
-}
-
-func validateAPIReferenceSemantics(reference *APIReference) error {
-	violations := make([]validation.Violation, 0)
-
-	owner, name, _ := strings.Cut(reference.ID, "/")
-	manifest := &registryspec.ModuleManifest{
-		Schema: registryspec.ModuleManifestSchemaV1,
-		Owner:  owner,
-		Name:   name,
-		Source: registryspec.Source{Repository: "https://example.invalid/module.git"},
-	}
-
-	violations = appendRegistryViolations(violations, registryspec.ValidateModuleManifest(manifest), "")
-
-	record := &registryspec.VersionRecord{
-		Schema:  registryspec.VersionRecordSchemaV1,
-		Version: reference.Version,
-		Tag:     "v" + reference.Version,
-		Commit:  strings.Repeat("0", 40),
-	}
-
-	violations = appendRegistryViolations(violations, registryspec.ValidateVersionRecord(record), "")
-
-	seenNamespaces := make(map[string]struct{}, len(reference.Namespaces))
-	for namespaceIndex, namespace := range reference.Namespaces {
-		namespacePath := validation.JSONPointer("namespaces", strconv.Itoa(namespaceIndex))
-		if _, exists := seenNamespaces[namespace.Name]; exists {
-			violations = append(violations, validation.Violation{
-				Path:    namespacePath + "/name",
-				Rule:    validation.RuleDuplicate,
-				Message: fmt.Sprintf("namespace %q is duplicated", namespace.Name),
-			})
-		}
-		seenNamespaces[namespace.Name] = struct{}{}
-
-		seenFunctions := make(map[string]struct{}, len(namespace.Functions))
-		for functionIndex, function := range namespace.Functions {
-			functionPath := namespacePath + "/functions/" + strconv.Itoa(functionIndex)
-			if _, exists := seenFunctions[function.Name]; exists {
-				violations = append(violations, validation.Violation{
-					Path:    functionPath + "/name",
-					Rule:    validation.RuleDuplicate,
-					Message: fmt.Sprintf("function %q is duplicated in namespace %q", function.Name, namespace.Name),
-				})
-			}
-			seenFunctions[function.Name] = struct{}{}
-
-			seenSignatures := make(map[string]struct{}, len(function.Signatures))
-			for signatureIndex, signature := range function.Signatures {
-				signaturePath := functionPath + "/signatures/" + strconv.Itoa(signatureIndex)
-				seenParameters := make(map[string]struct{}, len(signature.Parameters))
-				for parameterIndex, parameter := range signature.Parameters {
-					parameterPath := signaturePath + "/parameters/" + strconv.Itoa(parameterIndex)
-					if parameter.Name == "_" {
-						violations = append(violations, validation.Violation{
-							Path:    parameterPath + "/name",
-							Rule:    validation.RuleSchema,
-							Message: `parameter name "_" is reserved for generated argument names`,
-						})
-					}
-
-					if _, exists := seenParameters[parameter.Name]; exists {
-						violations = append(violations, validation.Violation{
-							Path:    parameterPath + "/name",
-							Rule:    validation.RuleDuplicate,
-							Message: fmt.Sprintf("parameter %q is duplicated", parameter.Name),
-						})
-					}
-					seenParameters[parameter.Name] = struct{}{}
-
-					if parameter.Type != "" && strings.TrimSpace(parameter.Type) == "" {
-						violations = append(violations, validation.Violation{
-							Path:    parameterPath + "/type",
-							Rule:    validation.RuleSchema,
-							Message: "parameter type must not be blank",
-						})
-					}
-
-					if parameter.Description != "" && strings.TrimSpace(parameter.Description) == "" {
-						violations = append(violations, validation.Violation{
-							Path:    parameterPath + "/description",
-							Rule:    validation.RuleSchema,
-							Message: "parameter description must not be blank",
-						})
-					}
-				}
-
-				if signature.Description != "" && strings.TrimSpace(signature.Description) == "" {
-					violations = append(violations, validation.Violation{
-						Path:    signaturePath + "/description",
-						Rule:    validation.RuleSchema,
-						Message: "signature description must not be blank",
-					})
-				}
-
-				if signature.Return != nil {
-					if strings.TrimSpace(signature.Return.Type) == "" {
-						violations = append(violations, validation.Violation{
-							Path:    signaturePath + "/return/type",
-							Rule:    validation.RuleSchema,
-							Message: "return type must not be blank",
-						})
-					}
-
-					if strings.TrimSpace(signature.Return.Description) == "" {
-						violations = append(violations, validation.Violation{
-							Path:    signaturePath + "/return/description",
-							Rule:    validation.RuleSchema,
-							Message: "return description must not be blank",
-						})
-					}
-				}
-
-				for throwIndex, thrown := range signature.Throws {
-					throwPath := signaturePath + "/throws/" + strconv.Itoa(throwIndex)
-					if strings.TrimSpace(thrown.Error) == "" {
-						violations = append(violations, validation.Violation{
-							Path:    throwPath + "/error",
-							Rule:    validation.RuleSchema,
-							Message: "thrown error must not be blank",
-						})
-					}
-
-					if strings.TrimSpace(thrown.Description) == "" {
-						violations = append(violations, validation.Violation{
-							Path:    throwPath + "/description",
-							Rule:    validation.RuleSchema,
-							Message: "thrown error description must not be blank",
-						})
-					}
-				}
-
-				if signature.Deprecated != "" && strings.TrimSpace(signature.Deprecated) == "" {
-					violations = append(violations, validation.Violation{
-						Path:    signaturePath + "/deprecated",
-						Rule:    validation.RuleSchema,
-						Message: "deprecation description must not be blank",
-					})
-				}
-
-				key := strconv.Itoa(len(signature.Parameters))
-				if signature.Variadic {
-					key = "variadic"
-				}
-
-				if _, exists := seenSignatures[key]; exists {
-					violations = append(violations, validation.Violation{
-						Path:    signaturePath,
-						Rule:    validation.RuleDuplicate,
-						Message: fmt.Sprintf("function %q has more than one %s signature", function.Name, key),
-					})
-				}
-				seenSignatures[key] = struct{}{}
-			}
-		}
-	}
-
-	return validation.NewErrors(validation.ScopeRegistryArtifact, violations)
 }
 
 func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID string) []validation.Violation {
@@ -425,10 +260,6 @@ func artifactIdentityMessage(schemaID string, location []string) string {
 			return registryidentity.ModuleNameMessage
 		}
 	case VersionSchemaV1:
-		if len(location) == 1 && location[0] == "id" {
-			return registryidentity.CoordinateMessage
-		}
-	case APISchemaV1:
 		if len(location) == 1 && location[0] == "id" {
 			return registryidentity.CoordinateMessage
 		}
