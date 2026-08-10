@@ -26,18 +26,22 @@ var (
 	artifactSchemasErr  error
 )
 
+// ValidateRootIndex validates a programmatically constructed Registry root index artifact.
 func ValidateRootIndex(index *RootIndex) error {
 	return validateArtifact(index, RootSchemaV1, validateRootIndexSemantics)
 }
 
+// ValidateModuleIndex validates a programmatically constructed Registry module index artifact.
 func ValidateModuleIndex(index *ModuleIndex) error {
 	return validateArtifact(index, ModuleIndexSchemaV1, validateModuleIndexSemantics)
 }
 
+// ValidateModuleDocument validates a programmatically constructed Registry module artifact.
 func ValidateModuleDocument(document *ModuleDocument) error {
 	return validateArtifact(document, ModuleSchemaV1, validateModuleDocumentSemantics)
 }
 
+// ValidateVersionDocument validates a programmatically constructed Registry version artifact.
 func ValidateVersionDocument(document *VersionDocument) error {
 	return validateArtifact(document, VersionSchemaV1, validateVersionDocumentSemantics)
 }
@@ -47,14 +51,17 @@ func ValidateAPIReference(reference *APIReference) error {
 	return validateArtifact(reference, APISchemaV1, validateAPIReferenceSemantics)
 }
 
+// ValidateCategoryIndex validates a programmatically constructed Registry category index artifact.
 func ValidateCategoryIndex(index *CategoryIndex) error {
 	return validateArtifact(index, CategoryIndexSchemaV1, validateCategoryIndexSemantics)
 }
 
+// ValidateCategoryDocument validates a programmatically constructed Registry category artifact.
 func ValidateCategoryDocument(document *CategoryDocument) error {
 	return validateArtifact(document, CategorySchemaV1, validateCategoryDocumentSemantics)
 }
 
+// ValidatePluginIndex validates a programmatically constructed Registry plugin index artifact.
 func ValidatePluginIndex(index *PluginIndex) error {
 	return validateArtifact(index, PluginIndexSchemaV1, noSemanticValidation[PluginIndex])
 }
@@ -213,6 +220,7 @@ func validateAPIReferenceSemantics(reference *APIReference) error {
 		Name:   name,
 		Source: registryspec.Source{Repository: "https://example.invalid/module.git"},
 	}
+
 	violations = appendRegistryViolations(violations, registryspec.ValidateModuleManifest(manifest), "")
 
 	record := &registryspec.VersionRecord{
@@ -221,6 +229,7 @@ func validateAPIReferenceSemantics(reference *APIReference) error {
 		Tag:     "v" + reference.Version,
 		Commit:  strings.Repeat("0", 40),
 	}
+
 	violations = appendRegistryViolations(violations, registryspec.ValidateVersionRecord(record), "")
 
 	seenNamespaces := make(map[string]struct{}, len(reference.Namespaces))
@@ -259,6 +268,7 @@ func validateAPIReferenceSemantics(reference *APIReference) error {
 						})
 					}
 				}
+
 				key := strconv.Itoa(len(signature.Parameters))
 				if signature.Variadic {
 					key = "variadic"
@@ -270,6 +280,7 @@ func validateAPIReferenceSemantics(reference *APIReference) error {
 						})
 					}
 				}
+
 				if _, exists := seenSignatures[key]; exists {
 					violations = append(violations, validation.Violation{
 						Path:    signaturePath,
@@ -308,6 +319,7 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID str
 			message = output.Error.String()
 		}
 	}
+
 	if rule == validation.Rule("pattern") {
 		if identityMessage := artifactIdentityMessage(schemaID, validationErr.InstanceLocation); identityMessage != "" {
 			message = identityMessage
@@ -429,6 +441,7 @@ func validateVersionDocumentSemantics(document *VersionDocument) error {
 			Path:       document.Source.Path,
 		},
 	}
+
 	violations = appendRegistryViolations(violations, registryspec.ValidateModuleManifest(manifest), "")
 
 	record := &registryspec.VersionRecord{
@@ -437,6 +450,7 @@ func validateVersionDocumentSemantics(document *VersionDocument) error {
 		Tag:     "v" + document.Version,
 		Commit:  document.Source.Commit,
 	}
+
 	violations = appendRegistryViolations(violations, registryspec.ValidateVersionRecord(record), "source")
 
 	if err := gomodule.Check(document.Package.Path, "v"+document.Version); err != nil {
@@ -577,10 +591,4 @@ func appendRegistryViolations(violations []validation.Violation, err error, pref
 
 func noSemanticValidation[T any](*T) error {
 	return nil
-}
-
-type offlineLoader struct{}
-
-func (offlineLoader) Load(schemaURL string) (any, error) {
-	return nil, fmt.Errorf("external schema loading is disabled: %s", schemaURL)
 }

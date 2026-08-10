@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -25,6 +24,7 @@ func TestValidFixtures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(fixtures) == 0 {
 		t.Fatal("no valid fixtures found")
 	}
@@ -45,6 +45,7 @@ func TestInvalidFixtures(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(fixtures) == 0 {
 		t.Fatal("no invalid fixtures found")
 	}
@@ -62,6 +63,7 @@ func TestInvalidFixtures(t *testing.T) {
 			if !errors.As(err, &validationErr) {
 				t.Fatalf("expected structured validation errors, got %T: %v", err, err)
 			}
+
 			if len(validationErr.Violations) == 0 {
 				t.Fatal("expected at least one violation")
 			}
@@ -118,6 +120,7 @@ func TestPublicIngestionAPIsValidateByDefault(t *testing.T) {
 	if !reflect.DeepEqual(parsed, loaded) || !reflect.DeepEqual(parsed, fromFile) {
 		t.Fatal("public ingestion APIs returned different manifests")
 	}
+
 	if err := module.Validate(parsed); err != nil {
 		t.Fatalf("validate parsed manifest: %v", err)
 	}
@@ -169,6 +172,7 @@ func TestMultipleSemanticViolations(t *testing.T) {
 		"/dependencies/1/module":  validation.RuleDuplicate,
 		"/license":                validation.RuleSPDX,
 	}
+
 	if len(validationErr.Violations) != len(want) {
 		t.Fatalf("expected %d violations, got %#v", len(want), validationErr.Violations)
 	}
@@ -231,6 +235,7 @@ func TestDecodeRejectsDuplicateKeysAndMultipleDocuments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	data = append(data, []byte("\n---\nname: second/document\n")...)
 	_, err = module.Parse(data)
 	validationErr = requireValidationErrors(t, err)
@@ -265,6 +270,7 @@ func TestStructuredRepositoryRoundTrip(t *testing.T) {
 		URL:       "https://github.com/MontFerret/contrib",
 		Directory: "modules/db/sqlite",
 	}
+
 	if !reflect.DeepEqual(manifest.Repository, want) {
 		t.Fatalf("repository = %#v, want %#v", manifest.Repository, want)
 	}
@@ -415,6 +421,7 @@ func TestNPMRangePrereleaseContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if stableRange.Check(prerelease) {
 		t.Fatal("prerelease unexpectedly satisfied a range without a prerelease comparator")
 	}
@@ -423,6 +430,7 @@ func TestNPMRangePrereleaseContract(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !explicitRange.Check(prerelease) {
 		t.Fatal("prerelease did not satisfy an explicitly requested prerelease range")
 	}
@@ -474,10 +482,4 @@ func requireViolationDetails(t *testing.T, validationErr *validation.Errors, pat
 	}
 
 	t.Fatalf("missing violation path=%q rule=%q message=%q in %#v", path, rule, message, validationErr.Violations)
-}
-
-type failingReader struct{}
-
-func (failingReader) Read([]byte) (int, error) {
-	return 0, io.ErrUnexpectedEOF
 }

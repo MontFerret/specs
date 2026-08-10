@@ -15,7 +15,7 @@ command -v "$JQ" >/dev/null 2>&1 || {
 }
 
 find "$@" -type f -name '*.json' -print | sort | (
-	status=0
+	format_status=0
 	tmp=
 
 	cleanup() {
@@ -31,13 +31,13 @@ find "$@" -type f -name '*.json' -print | sort | (
 		tmp=$(mktemp)
 		if ! "$JQ" --indent "$JSON_INDENT" . "$file" > "$tmp"; then
 			printf 'Invalid JSON: %s\n' "$file" >&2
-			status=1
+			format_status=1
 		elif ! diff -u "$file" "$tmp"; then
-			status=1
+			format_status=1
 		fi
 		rm -f "$tmp"
 		tmp=
 	done
 
-	exit "$status"
+	exit "$format_status"
 )

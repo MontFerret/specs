@@ -213,12 +213,6 @@ func readSchema(schemaPath string) (any, error) {
 	return document, nil
 }
 
-type offlineLoader struct{}
-
-func (offlineLoader) Load(schemaURL string) (any, error) {
-	return nil, fmt.Errorf("external schema loading is disabled: %s", schemaURL)
-}
-
 func validateModuleSemantics(manifest *ModuleManifest) error {
 	violations := make([]validation.Violation, 0, 2)
 

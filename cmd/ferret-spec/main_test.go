@@ -26,14 +26,15 @@ func TestRunValidFilesAndStdinInArgumentOrder(t *testing.T) {
 		[]string{"validate", "module", jsonPath, "-", yamlPath},
 		stdin,
 	)
-
 	if code != exitSuccess {
 		t.Fatalf("expected exit code %d, got %d", exitSuccess, code)
 	}
+
 	wantStdout := jsonPath + ": valid\n<stdin>: valid\n" + yamlPath + ": valid\n"
 	if stdout != wantStdout {
 		t.Fatalf("unexpected stdout:\n%s\nwant:\n%s", stdout, wantStdout)
 	}
+
 	if stderr != "" {
 		t.Fatalf("unexpected stderr: %s", stderr)
 	}
@@ -43,13 +44,14 @@ func TestRunReportsEverySemanticViolation(t *testing.T) {
 	path := fixturePath("invalid", "multiple-violations.yaml")
 
 	code, stdout, stderr := runCLI(t, []string{"validate", "module", path}, nil)
-
 	if code != exitInvalid {
 		t.Fatalf("expected exit code %d, got %d", exitInvalid, code)
 	}
+
 	if stdout != "" {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
+
 	want := strings.Join([]string{
 		path + ":/compatibility/ferret [version-range] version must be a valid npm-compatible semantic version range",
 		path + ":/dependencies/0/version [version-range] version must be a valid npm-compatible semantic version range",
@@ -57,6 +59,7 @@ func TestRunReportsEverySemanticViolation(t *testing.T) {
 		path + ":/license [spdx] license must be a valid SPDX license expression",
 		"",
 	}, "\n")
+
 	if stderr != want {
 		t.Fatalf("unexpected stderr:\n%s\nwant:\n%s", stderr, want)
 	}
@@ -74,9 +77,11 @@ func TestRunReportsCanonicalLowercaseIdentityRequirement(t *testing.T) {
 	if code != exitInvalid {
 		t.Fatalf("expected exit code %d, got %d", exitInvalid, code)
 	}
+
 	if stdout != "" {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
+
 	want := "<stdin>:/name [pattern] module identity must use canonical lowercase owner/name spelling; each segment must start and end with a lowercase letter or digit\n"
 	if stderr != want {
 		t.Fatalf("unexpected stderr:\n%s\nwant:\n%s", stderr, want)
@@ -89,13 +94,14 @@ func TestRunUsesDollarForDocumentRoot(t *testing.T) {
 		[]string{"validate", "module", "-"},
 		[]byte("[unterminated"),
 	)
-
 	if code != exitInvalid {
 		t.Fatalf("expected exit code %d, got %d", exitInvalid, code)
 	}
+
 	if stdout != "" {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
+
 	if !strings.HasPrefix(stderr, "<stdin>:$ [decode] ") {
 		t.Fatalf("expected root decode diagnostic, got %q", stderr)
 	}
@@ -109,14 +115,15 @@ func TestRunWritesExactValidJSONEnvelope(t *testing.T) {
 		[]string{"validate", "module", "--format", "json", "-"},
 		stdin,
 	)
-
 	if code != exitSuccess {
 		t.Fatalf("expected exit code %d, got %d", exitSuccess, code)
 	}
+
 	want := "{\"formatVersion\":1,\"kind\":\"module\",\"status\":\"valid\",\"results\":[{\"source\":\"<stdin>\",\"status\":\"valid\"}]}\n"
 	if stdout != want {
 		t.Fatalf("unexpected JSON:\n%s\nwant:\n%s", stdout, want)
 	}
+
 	if stderr != "" {
 		t.Fatalf("unexpected stderr: %s", stderr)
 	}
@@ -130,10 +137,10 @@ func TestRunWritesStructuredInvalidJSON(t *testing.T) {
 		[]string{"validate", "module", "--format=json", path},
 		nil,
 	)
-
 	if code != exitInvalid {
 		t.Fatalf("expected exit code %d, got %d", exitInvalid, code)
 	}
+
 	if stderr != "" {
 		t.Fatalf("JSON validation wrote to stderr: %s", stderr)
 	}
@@ -142,6 +149,7 @@ func TestRunWritesStructuredInvalidJSON(t *testing.T) {
 	if err := jsonUnmarshal([]byte(stdout), &report); err != nil {
 		t.Fatalf("decode report: %v\n%s", err, stdout)
 	}
+
 	want := validationReport{
 		FormatVersion: 1,
 		Kind:          "module",
@@ -173,6 +181,7 @@ func TestRunWritesStructuredInvalidJSON(t *testing.T) {
 			},
 		}},
 	}
+
 	if !reflect.DeepEqual(report, want) {
 		t.Fatalf("unexpected report:\n%#v\nwant:\n%#v", report, want)
 	}
@@ -210,13 +219,14 @@ func TestOperationalErrorsTakePrecedenceAndDoNotStopValidation(t *testing.T) {
 	code := app.run([]string{
 		"validate", "module", "--format", "json", "invalid", "broken", "valid",
 	})
-
 	if code != exitOperational {
 		t.Fatalf("expected exit code %d, got %d", exitOperational, code)
 	}
+
 	if !reflect.DeepEqual(validated, []string{"invalid", "broken", "valid"}) {
 		t.Fatalf("inputs were not all validated in order: %#v", validated)
 	}
+
 	want := "{\"formatVersion\":1,\"kind\":\"module\",\"status\":\"error\",\"results\":[" +
 		"{\"source\":\"invalid\",\"status\":\"invalid\",\"violations\":[{\"path\":\"/version\",\"rule\":\"semver\",\"message\":\"bad version\"}]}," +
 		"{\"source\":\"broken\",\"status\":\"error\",\"error\":\"validator exploded\"}," +
@@ -224,6 +234,7 @@ func TestOperationalErrorsTakePrecedenceAndDoNotStopValidation(t *testing.T) {
 	if stdout.String() != want {
 		t.Fatalf("unexpected JSON:\n%s\nwant:\n%s", stdout.String(), want)
 	}
+
 	if stderr.String() != "" {
 		t.Fatalf("JSON validation wrote to stderr: %s", stderr.String())
 	}
@@ -246,13 +257,14 @@ func TestReadErrorsAreOperational(t *testing.T) {
 	}
 
 	code := app.run([]string{"validate", "module", "manifest.yaml"})
-
 	if code != exitOperational {
 		t.Fatalf("expected exit code %d, got %d", exitOperational, code)
 	}
+
 	if stdout.String() != "" {
 		t.Fatalf("unexpected stdout: %s", stdout.String())
 	}
+
 	if stderr.String() != "manifest.yaml: error: permission denied\n" {
 		t.Fatalf("unexpected stderr: %s", stderr.String())
 	}
@@ -264,13 +276,14 @@ func TestDirectoryInputIsNotDiscovered(t *testing.T) {
 		[]string{"validate", "module", t.TempDir()},
 		nil,
 	)
-
 	if code != exitOperational {
 		t.Fatalf("expected exit code %d, got %d", exitOperational, code)
 	}
+
 	if stdout != "" {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
+
 	if !strings.Contains(stderr, ": error: ") {
 		t.Fatalf("expected an operational error, got %q", stderr)
 	}
@@ -298,12 +311,15 @@ func TestUsageErrors(t *testing.T) {
 			if code != exitOperational {
 				t.Fatalf("expected exit code %d, got %d", exitOperational, code)
 			}
+
 			if stdout != "" {
 				t.Fatalf("unexpected stdout: %s", stdout)
 			}
+
 			if !strings.Contains(stderr, "error: "+test.message) {
 				t.Fatalf("missing error %q in %q", test.message, stderr)
 			}
+
 			if !strings.Contains(stderr, "Usage:") {
 				t.Fatalf("missing usage in %q", stderr)
 			}
@@ -325,9 +341,11 @@ func TestHelpAtEveryCommandLevel(t *testing.T) {
 			if code != exitSuccess {
 				t.Fatalf("expected exit code %d, got %d", exitSuccess, code)
 			}
+
 			if !strings.Contains(stdout, "ferret-spec validate module") {
 				t.Fatalf("missing usage in stdout: %s", stdout)
 			}
+
 			if stderr != "" {
 				t.Fatalf("unexpected stderr: %s", stderr)
 			}
@@ -340,22 +358,17 @@ func TestStdinReadFailureIsOperational(t *testing.T) {
 		[]string{"validate", "module", "-"},
 		failingReader{},
 	)
-
 	if code != exitOperational {
 		t.Fatalf("expected exit code %d, got %d", exitOperational, code)
 	}
+
 	if stdout != "" {
 		t.Fatalf("unexpected stdout: %s", stdout)
 	}
+
 	if stderr != "<stdin>: error: read failed\n" {
 		t.Fatalf("unexpected stderr: %s", stderr)
 	}
-}
-
-type failingReader struct{}
-
-func (failingReader) Read([]byte) (int, error) {
-	return 0, errors.New("read failed")
 }
 
 func runCLI(t *testing.T, args []string, stdin []byte) (int, string, string) {

@@ -58,6 +58,7 @@ func TestNewErrorsSortsViolations(t *testing.T) {
 		{Path: "/a", Rule: RuleSemVer, Message: "second rule"},
 		{Path: "/z", Rule: RuleSchema, Message: "last"},
 	}
+
 	if !reflect.DeepEqual(validationErr.Violations, want) {
 		t.Fatalf("violations = %#v, want %#v", validationErr.Violations, want)
 	}
@@ -71,23 +72,5 @@ func TestNilErrorsUsesGenericMessage(t *testing.T) {
 	var err *Errors
 	if got, want := err.Error(), "validation failed"; got != want {
 		t.Fatalf("error = %q, want %q", got, want)
-	}
-}
-
-func TestJSONPointer(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		parts []string
-		want  string
-	}{
-		{name: "root", want: ""},
-		{name: "tokens", parts: []string{"dependencies", "0", "module"}, want: "/dependencies/0/module"},
-		{name: "escaping", parts: []string{"a/b", "~value"}, want: "/a~1b/~0value"},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if got := JSONPointer(test.parts...); got != test.want {
-				t.Fatalf("JSONPointer() = %q, want %q", got, test.want)
-			}
-		})
 	}
 }

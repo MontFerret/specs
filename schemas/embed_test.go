@@ -24,6 +24,7 @@ func TestEveryEmbeddedSchemaCompilesOffline(t *testing.T) {
 		if walkErr != nil {
 			return walkErr
 		}
+
 		if entry.IsDir() || !strings.HasSuffix(path, ".json") {
 			return nil
 		}
@@ -32,6 +33,7 @@ func TestEveryEmbeddedSchemaCompilesOffline(t *testing.T) {
 		if err != nil {
 			return err
 		}
+
 		decoder := json.NewDecoder(bytes.NewReader(data))
 		decoder.UseNumber()
 
@@ -39,6 +41,7 @@ func TestEveryEmbeddedSchemaCompilesOffline(t *testing.T) {
 		if err := decoder.Decode(&document); err != nil {
 			return fmt.Errorf("decode %s: %w", path, err)
 		}
+
 		if document["$schema"] != "https://json-schema.org/draft/2020-12/schema" {
 			return fmt.Errorf("%s does not declare Draft 2020-12", path)
 		}
@@ -46,9 +49,11 @@ func TestEveryEmbeddedSchemaCompilesOffline(t *testing.T) {
 		if !ok || !strings.HasPrefix(id, "https://schemas.ferretlang.org/") {
 			return fmt.Errorf("%s has invalid canonical ID", path)
 		}
+
 		if err := compiler.AddResource(id, document); err != nil {
 			return fmt.Errorf("register %s: %w", path, err)
 		}
+
 		ids = append(ids, id)
 		return nil
 	})
@@ -105,6 +110,7 @@ func compileSingle(t *testing.T, path string) *jsonschema.Schema {
 	if err := json.Unmarshal(data, &document); err != nil {
 		t.Fatal(err)
 	}
+
 	id := document["$id"].(string)
 	compiler := jsonschema.NewCompiler()
 	compiler.DefaultDraft(jsonschema.Draft2020)
@@ -116,11 +122,6 @@ func compileSingle(t *testing.T, path string) *jsonschema.Schema {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	return schema
-}
-
-type rejectLoader struct{}
-
-func (rejectLoader) Load(url string) (any, error) {
-	return nil, fmt.Errorf("network loading disabled for %s", url)
 }

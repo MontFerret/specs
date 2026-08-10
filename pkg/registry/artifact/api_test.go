@@ -107,6 +107,7 @@ func TestAPIReferenceAllowsNoNamespaces(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err := artifact.ParseAPIReference(data); err != nil {
 		t.Fatalf("parse empty API Reference: %v", err)
 	}

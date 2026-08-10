@@ -156,6 +156,7 @@ func TestVersionRecordPublishedAt(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
 		if parsed.PublishedAt == nil || !parsed.PublishedAt.Equal(publishedAt) {
 			t.Fatalf("unexpected publication timestamp: %v", parsed.PublishedAt)
 		}
@@ -231,6 +232,7 @@ func TestParsingAndLoadingRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	directory := t.TempDir()
 	filePath := filepath.Join(directory, "manifest.json")
 	if err := os.WriteFile(filePath, data, 0o600); err != nil {
@@ -240,6 +242,7 @@ func TestParsingAndLoadingRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !reflect.DeepEqual(parsed, loaded) || !reflect.DeepEqual(parsed, fromFile) || !reflect.DeepEqual(parsed, manifest) {
 		t.Fatalf("round trip differs: %#v %#v %#v", parsed, loaded, fromFile)
 	}
@@ -277,6 +280,7 @@ func requireValidationErrors(t *testing.T, err error) *validation.Errors {
 	if !errors.As(err, &validationErr) {
 		t.Fatalf("expected *validation.Errors, got %T: %v", err, err)
 	}
+
 	return validationErr
 }
 

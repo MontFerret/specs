@@ -93,6 +93,7 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []validation
 			message = output.Error.String()
 		}
 	}
+
 	if rule == validation.Rule("pattern") && isDistributionIdentityLocation(validationErr.InstanceLocation) {
 		message = registryidentity.CoordinateMessage
 	}
@@ -317,6 +318,7 @@ func validateMembers(basePath string, namespace NamespaceExport) []validation.Vi
 		{name: "types", values: namespace.Types},
 		{name: "constants", values: namespace.Constants},
 	}
+
 	seen := make(map[string]string)
 	violations := make([]validation.Violation, 0)
 

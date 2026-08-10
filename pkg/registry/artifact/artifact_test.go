@@ -104,6 +104,7 @@ func TestCanonicalKeysAndReservedPluginsAreEnforced(t *testing.T) {
 		SchemaVersion: artifact.SchemaVersion,
 		Plugins:       []json.RawMessage{json.RawMessage(`{"id":"acme/plugin"}`)},
 	}
+
 	requireValidationErrors(t, artifact.ValidatePluginIndex(plugins))
 
 	category := validCategoryDocument()
@@ -169,6 +170,7 @@ func TestModuleIdentityRequiresCanonicalLowercase(t *testing.T) {
 		path   string
 		errors func(string) []error
 	}
+
 	surfaces := []identitySurface{
 		{
 			name: "module index",
