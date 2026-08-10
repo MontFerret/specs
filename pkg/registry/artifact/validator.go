@@ -259,26 +259,99 @@ func validateAPIReferenceSemantics(reference *APIReference) error {
 			seenSignatures := make(map[string]struct{}, len(function.Signatures))
 			for signatureIndex, signature := range function.Signatures {
 				signaturePath := functionPath + "/signatures/" + strconv.Itoa(signatureIndex)
+				seenParameters := make(map[string]struct{}, len(signature.Parameters))
 				for parameterIndex, parameter := range signature.Parameters {
-					if parameter == "_" {
+					parameterPath := signaturePath + "/parameters/" + strconv.Itoa(parameterIndex)
+					if parameter.Name == "_" {
 						violations = append(violations, validation.Violation{
-							Path:    signaturePath + "/parameters/" + strconv.Itoa(parameterIndex),
+							Path:    parameterPath + "/name",
 							Rule:    validation.RuleSchema,
 							Message: `parameter name "_" is reserved for generated argument names`,
 						})
 					}
+
+					if _, exists := seenParameters[parameter.Name]; exists {
+						violations = append(violations, validation.Violation{
+							Path:    parameterPath + "/name",
+							Rule:    validation.RuleDuplicate,
+							Message: fmt.Sprintf("parameter %q is duplicated", parameter.Name),
+						})
+					}
+					seenParameters[parameter.Name] = struct{}{}
+
+					if parameter.Type != "" && strings.TrimSpace(parameter.Type) == "" {
+						violations = append(violations, validation.Violation{
+							Path:    parameterPath + "/type",
+							Rule:    validation.RuleSchema,
+							Message: "parameter type must not be blank",
+						})
+					}
+
+					if parameter.Description != "" && strings.TrimSpace(parameter.Description) == "" {
+						violations = append(violations, validation.Violation{
+							Path:    parameterPath + "/description",
+							Rule:    validation.RuleSchema,
+							Message: "parameter description must not be blank",
+						})
+					}
+				}
+
+				if signature.Description != "" && strings.TrimSpace(signature.Description) == "" {
+					violations = append(violations, validation.Violation{
+						Path:    signaturePath + "/description",
+						Rule:    validation.RuleSchema,
+						Message: "signature description must not be blank",
+					})
+				}
+
+				if signature.Return != nil {
+					if strings.TrimSpace(signature.Return.Type) == "" {
+						violations = append(violations, validation.Violation{
+							Path:    signaturePath + "/return/type",
+							Rule:    validation.RuleSchema,
+							Message: "return type must not be blank",
+						})
+					}
+
+					if strings.TrimSpace(signature.Return.Description) == "" {
+						violations = append(violations, validation.Violation{
+							Path:    signaturePath + "/return/description",
+							Rule:    validation.RuleSchema,
+							Message: "return description must not be blank",
+						})
+					}
+				}
+
+				for throwIndex, thrown := range signature.Throws {
+					throwPath := signaturePath + "/throws/" + strconv.Itoa(throwIndex)
+					if strings.TrimSpace(thrown.Error) == "" {
+						violations = append(violations, validation.Violation{
+							Path:    throwPath + "/error",
+							Rule:    validation.RuleSchema,
+							Message: "thrown error must not be blank",
+						})
+					}
+
+					if strings.TrimSpace(thrown.Description) == "" {
+						violations = append(violations, validation.Violation{
+							Path:    throwPath + "/description",
+							Rule:    validation.RuleSchema,
+							Message: "thrown error description must not be blank",
+						})
+					}
+				}
+
+				if signature.Deprecated != "" && strings.TrimSpace(signature.Deprecated) == "" {
+					violations = append(violations, validation.Violation{
+						Path:    signaturePath + "/deprecated",
+						Rule:    validation.RuleSchema,
+						Message: "deprecation description must not be blank",
+					})
 				}
 
 				key := strconv.Itoa(len(signature.Parameters))
 				if signature.Variadic {
 					key = "variadic"
-					if len(signature.Parameters) != 1 {
-						violations = append(violations, validation.Violation{
-							Path:    signaturePath + "/parameters",
-							Rule:    validation.RuleSchema,
-							Message: "a variadic signature must declare exactly one parameter",
-						})
-					}
 				}
 
 				if _, exists := seenSignatures[key]; exists {

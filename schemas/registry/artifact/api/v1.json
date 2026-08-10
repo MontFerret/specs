@@ -89,23 +89,119 @@
       "properties": {
         "parameters": {
           "type": "array",
-          "maxItems": 4,
           "items": {
-            "$ref": "#/$defs/parameterName"
+            "$ref": "#/$defs/parameter"
           }
         },
         "variadic": {
           "const": true
         },
-        "documentation": {
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "return": {
+          "$ref": "#/$defs/return"
+        },
+        "throws": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/thrownError"
+          }
+        },
+        "deprecated": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "if": {
+        "required": [
+          "variadic"
+        ]
+      },
+      "then": {
+        "properties": {
+          "parameters": {
+            "minItems": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "parameters": {
+            "maxItems": 4
+          }
+        }
+      }
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "dependentRequired": {
+        "type": [
+          "description"
+        ],
+        "description": [
+          "type"
+        ]
+      }
+    },
+    "return": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "description"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]+$"
+        },
+        "description": {
           "type": "string",
           "minLength": 1
         }
       }
     },
-    "parameterName": {
-      "type": "string",
-      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    "thrownError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "error",
+        "description"
+      ],
+      "properties": {
+        "error": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[^\\r\\n]+$"
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
     }
   }
 }

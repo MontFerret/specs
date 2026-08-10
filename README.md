@@ -209,6 +209,12 @@ inspection, publication history, distribution generation, hosting, and
 cross-document navigation remain responsibilities of the registry
 implementation rather than these portable contracts.
 
+The API Reference artifact describes each registered function signature with
+ordered Ferret-facing parameter objects. A parameter always has a name and may
+also carry a Ferret type expression and description. Signatures may include
+prose, a return value, ordered visible failures, and a deprecation message.
+Ferret type and error expressions are opaque strings rather than Go types.
+
 The older registry placeholder at `/registry/v1.json` and the plugin v1 file
 remain reserved and deliberately reject every document.
 

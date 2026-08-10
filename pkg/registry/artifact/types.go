@@ -150,8 +150,30 @@ type (
 
 	// APIFunctionSignature describes one fixed-arity or variadic function definition.
 	APIFunctionSignature struct {
-		Parameters    []string `json:"parameters"`
-		Variadic      bool     `json:"variadic,omitempty"`
-		Documentation string   `json:"documentation,omitempty"`
+		Parameters  []APIParameter   `json:"parameters"`
+		Variadic    bool             `json:"variadic,omitempty"`
+		Description string           `json:"description,omitempty"`
+		Return      *APIReturn       `json:"return,omitempty"`
+		Throws      []APIThrownError `json:"throws,omitempty"`
+		Deprecated  string           `json:"deprecated,omitempty"`
+	}
+
+	// APIParameter describes one Ferret-facing function parameter.
+	APIParameter struct {
+		Name        string `json:"name"`
+		Type        string `json:"type,omitempty"`
+		Description string `json:"description,omitempty"`
+	}
+
+	// APIReturn describes a Ferret-facing function result.
+	APIReturn struct {
+		Type        string `json:"type"`
+		Description string `json:"description"`
+	}
+
+	// APIThrownError describes one Ferret-visible function failure.
+	APIThrownError struct {
+		Error       string `json:"error"`
+		Description string `json:"description"`
 	}
 )

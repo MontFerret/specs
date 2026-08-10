@@ -392,8 +392,12 @@ func validAPIReference() *artifact.APIReference {
 				Functions: []artifact.APIFunction{{
 					Name: "VERSION",
 					Signatures: []artifact.APIFunctionSignature{{
-						Parameters:    []string{},
-						Documentation: "Version returns the archive module version.",
+						Parameters:  []artifact.APIParameter{},
+						Description: "Version returns the archive module version.",
+						Return: &artifact.APIReturn{
+							Type:        "String",
+							Description: "Current module version.",
+						},
 					}},
 				}},
 			},
@@ -402,8 +406,17 @@ func validAPIReference() *artifact.APIReference {
 				Functions: []artifact.APIFunction{{
 					Name: "READ",
 					Signatures: []artifact.APIFunctionSignature{
-						{Parameters: []string{"path"}},
-						{Parameters: []string{"args"}, Variadic: true},
+						{Parameters: []artifact.APIParameter{{Name: "path"}}},
+						{
+							Parameters: []artifact.APIParameter{{
+								Name:        "paths",
+								Type:        "String...",
+								Description: "Archive paths.",
+							}},
+							Variadic:   true,
+							Throws:     []artifact.APIThrownError{{Error: "ReadError", Description: "An archive path cannot be read."}},
+							Deprecated: "Use READ_FILE instead.",
+						},
 					},
 				}},
 			},
