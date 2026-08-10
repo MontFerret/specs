@@ -40,6 +40,7 @@ const (
 const (
 	RuleDecode              Rule = "decode"
 	RuleSchema              Rule = "schema"
+	RulePattern             Rule = "pattern"
 	RuleSemVer              Rule = "semver"
 	RuleVersionRange        Rule = "version-range"
 	RuleSPDX                Rule = "spdx"

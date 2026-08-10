@@ -296,12 +296,12 @@ func TestSchemaBoundaries(t *testing.T) {
 	manifest = minimalManifest()
 	manifest.Documentation = "http://docs.montferret.dev/modules/http/"
 	validationErr = requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/documentation", validation.Rule("pattern"))
+	requireViolation(t, validationErr, "/documentation", validation.RulePattern)
 
 	manifest = minimalManifest()
 	manifest.Repository = &module.Repository{URL: "https://"}
 	validationErr = requireValidationErrors(t, module.Validate(manifest))
-	requireViolation(t, validationErr, "/repository/url", validation.Rule("pattern"))
+	requireViolation(t, validationErr, "/repository/url", validation.RulePattern)
 
 	manifest = minimalManifest()
 	manifest.Authors = []module.Author{{Name: "Maintainer", Email: "not-an-email"}}
@@ -339,7 +339,7 @@ func TestDistributionIdentityRequiresCanonicalLowercase(t *testing.T) {
 			manifest.Name = name
 
 			validationErr := requireValidationErrors(t, module.Validate(manifest))
-			requireViolationDetails(t, validationErr, "/name", validation.Rule("pattern"), message)
+			requireViolationDetails(t, validationErr, "/name", validation.RulePattern, message)
 
 			data, err := json.Marshal(manifest)
 			if err != nil {
@@ -347,14 +347,14 @@ func TestDistributionIdentityRequiresCanonicalLowercase(t *testing.T) {
 			}
 			_, err = module.Parse(data)
 			validationErr = requireValidationErrors(t, err)
-			requireViolationDetails(t, validationErr, "/name", validation.Rule("pattern"), message)
+			requireViolationDetails(t, validationErr, "/name", validation.RulePattern, message)
 		})
 	}
 
 	manifest := minimalManifest()
 	manifest.Dependencies = []module.Dependency{{Module: "MontFerret/archive", Version: "^1.0.0"}}
 	validationErr := requireValidationErrors(t, module.Validate(manifest))
-	requireViolationDetails(t, validationErr, "/dependencies/0/module", validation.Rule("pattern"), message)
+	requireViolationDetails(t, validationErr, "/dependencies/0/module", validation.RulePattern, message)
 }
 
 func TestNamespaceCasingFollowsFQL(t *testing.T) {

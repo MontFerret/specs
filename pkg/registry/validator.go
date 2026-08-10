@@ -134,7 +134,7 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID str
 		}
 	}
 
-	if rule == validation.Rule("pattern") && schemaID == ModuleManifestSchemaV1 && len(validationErr.InstanceLocation) == 1 {
+	if rule == validation.RulePattern && schemaID == ModuleManifestSchemaV1 && len(validationErr.InstanceLocation) == 1 {
 		switch validationErr.InstanceLocation[0] {
 		case "owner":
 			message = registryidentity.OwnerMessage

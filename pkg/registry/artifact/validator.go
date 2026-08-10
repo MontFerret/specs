@@ -320,7 +320,7 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError, schemaID str
 		}
 	}
 
-	if rule == validation.Rule("pattern") {
+	if rule == validation.RulePattern {
 		if identityMessage := artifactIdentityMessage(schemaID, validationErr.InstanceLocation); identityMessage != "" {
 			message = identityMessage
 		}

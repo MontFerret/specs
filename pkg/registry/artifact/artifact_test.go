@@ -247,7 +247,7 @@ func TestModuleIdentityRequiresCanonicalLowercase(t *testing.T) {
 			t.Run(surface.name+" "+id, func(t *testing.T) {
 				for _, err := range surface.errors(id) {
 					validationErr := requireValidationErrors(t, err)
-					requireViolationDetails(t, validationErr, surface.path, validation.Rule("pattern"), coordinateMessage)
+					requireViolationDetails(t, validationErr, surface.path, validation.RulePattern, coordinateMessage)
 				}
 			})
 		}
@@ -292,7 +292,7 @@ func TestModuleIdentityRequiresCanonicalLowercase(t *testing.T) {
 				parseError(t, document, artifact.ParseModuleDocument),
 			} {
 				validationErr := requireValidationErrors(t, err)
-				requireViolationDetails(t, validationErr, test.path, validation.Rule("pattern"), test.message)
+				requireViolationDetails(t, validationErr, test.path, validation.RulePattern, test.message)
 			}
 		})
 	}

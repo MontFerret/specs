@@ -94,7 +94,7 @@ func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []validation
 		}
 	}
 
-	if rule == validation.Rule("pattern") && isDistributionIdentityLocation(validationErr.InstanceLocation) {
+	if rule == validation.RulePattern && isDistributionIdentityLocation(validationErr.InstanceLocation) {
 		message = registryidentity.CoordinateMessage
 	}
 

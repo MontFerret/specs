@@ -68,7 +68,7 @@ func TestRegistryIdentityRequiresCanonicalLowercase(t *testing.T) {
 			test.mutate(manifest)
 
 			validationErr := requireValidationErrors(t, registry.ValidateModuleManifest(manifest))
-			requireViolationDetails(t, validationErr, test.path, validation.Rule("pattern"), test.message)
+			requireViolationDetails(t, validationErr, test.path, validation.RulePattern, test.message)
 
 			data, err := json.Marshal(manifest)
 			if err != nil {
@@ -76,7 +76,7 @@ func TestRegistryIdentityRequiresCanonicalLowercase(t *testing.T) {
 			}
 			_, err = registry.ParseModuleManifest(data)
 			validationErr = requireValidationErrors(t, err)
-			requireViolationDetails(t, validationErr, test.path, validation.Rule("pattern"), test.message)
+			requireViolationDetails(t, validationErr, test.path, validation.RulePattern, test.message)
 		})
 	}
 }
