@@ -96,3 +96,31 @@ func TestAPIReferenceVariadicSignatureHasOneParameter(t *testing.T) {
 	reference.Namespaces[1].Functions[0].Signatures[1].Parameters = []string{"first", "rest"}
 	requireRule(t, requireValidationErrors(t, artifact.ValidateAPIReference(reference)), validation.RuleSchema)
 }
+
+func TestAPIReferenceAllowsNoNamespaces(t *testing.T) {
+	reference := validAPIReference()
+	reference.Namespaces = []artifact.APINamespace{}
+	if err := artifact.ValidateAPIReference(reference); err != nil {
+		t.Fatalf("validate empty API Reference: %v", err)
+	}
+	data, err := json.Marshal(reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := artifact.ParseAPIReference(data); err != nil {
+		t.Fatalf("parse empty API Reference: %v", err)
+	}
+}
+
+func TestAPIReferenceRejectsReservedParameterName(t *testing.T) {
+	reference := validAPIReference()
+	reference.Namespaces[1].Functions[0].Signatures[0].Parameters[0] = "_"
+	violations := requireValidationErrors(t, artifact.ValidateAPIReference(reference))
+	requireRule(t, violations, validation.RuleSchema)
+	data, err := json.Marshal(reference)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = artifact.ParseAPIReference(data)
+	requireRule(t, requireValidationErrors(t, err), validation.RuleSchema)
+}

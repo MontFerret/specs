@@ -250,6 +250,15 @@ func validateAPIReferenceSemantics(reference *APIReference) error {
 			seenSignatures := make(map[string]struct{}, len(function.Signatures))
 			for signatureIndex, signature := range function.Signatures {
 				signaturePath := functionPath + "/signatures/" + strconv.Itoa(signatureIndex)
+				for parameterIndex, parameter := range signature.Parameters {
+					if parameter == "_" {
+						violations = append(violations, validation.Violation{
+							Path:    signaturePath + "/parameters/" + strconv.Itoa(parameterIndex),
+							Rule:    validation.RuleSchema,
+							Message: `parameter name "_" is reserved for generated argument names`,
+						})
+					}
+				}
 				key := strconv.Itoa(len(signature.Parameters))
 				if signature.Variadic {
 					key = "variadic"
