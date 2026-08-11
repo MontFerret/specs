@@ -197,6 +197,7 @@ https://schemas.ferretlang.org/registry/artifact/root/v1.json
 https://schemas.ferretlang.org/registry/artifact/module-index/v1.json
 https://schemas.ferretlang.org/registry/artifact/module/v1.json
 https://schemas.ferretlang.org/registry/artifact/version/v1.json
+https://schemas.ferretlang.org/registry/artifact/api-index/v1.json
 https://schemas.ferretlang.org/registry/artifact/api/v1.json
 https://schemas.ferretlang.org/registry/artifact/category-index/v1.json
 https://schemas.ferretlang.org/registry/artifact/category/v1.json
@@ -205,10 +206,10 @@ https://schemas.ferretlang.org/registry/artifact/plugin-index/v1.json
 
 The `pkg/registry/artifact` package owns the Registry document types other than
 the API Reference, plus their strict JSON parsing and local validation. The
-canonical `pkg/api` package owns the API Reference types, structured Ferret API
-documentation parsing, strict JSON parsing, and local validation. Deprecated
-aliases and forwards remain in `pkg/registry/artifact` for Go source
-compatibility; they delegate to `pkg/api`.
+canonical `pkg/api` package owns the API Reference and discovery-index types,
+structured Ferret API documentation parsing, strict JSON parsing, and local
+validation. Deprecated aliases and forwards remain in `pkg/registry/artifact`
+for Go source compatibility; they delegate to `pkg/api`.
 
 Registry-checkout layout, Go source inspection, remote Git inspection,
 publication history, distribution generation, hosting, and cross-document

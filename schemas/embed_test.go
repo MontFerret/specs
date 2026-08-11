@@ -85,6 +85,8 @@ func TestReservedSchemasRejectEveryDocument(t *testing.T) {
 
 func TestRegistryArtifactSchemasAreEmbedded(t *testing.T) {
 	for _, path := range []string{
+		"registry/artifact/api-index/v1.json",
+		"registry/artifact/api/v1.json",
 		"registry/artifact/root/v1.json",
 		"registry/artifact/module-index/v1.json",
 		"registry/artifact/module/v1.json",

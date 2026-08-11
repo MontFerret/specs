@@ -6,9 +6,33 @@ const (
 
 	// SchemaV1 is the canonical schema ID for Ferret API Reference v1.
 	SchemaV1 = "https://schemas.ferretlang.org/registry/artifact/api/v1.json"
+
+	// IndexSchemaVersion is the supported Ferret API Reference Index schema version.
+	IndexSchemaVersion = 1
+
+	// IndexSchemaV1 is the canonical schema ID for Ferret API Reference Index v1.
+	IndexSchemaV1 = "https://schemas.ferretlang.org/registry/artifact/api-index/v1.json"
 )
 
 type (
+	// Index discovers immutable API Reference artifacts by version.
+	Index struct {
+		// SchemaVersion identifies the API Reference Index wire contract.
+		SchemaVersion int `json:"schemaVersion"`
+		// Latest is the greatest stable version, omitted when only prereleases exist.
+		Latest string `json:"latest,omitempty"`
+		// Versions contains every published API Reference in descending semantic-version order.
+		Versions []IndexVersion `json:"versions"`
+	}
+
+	// IndexVersion links one semantic version to its authoritative API Reference location.
+	IndexVersion struct {
+		// Version is the immutable API Reference version.
+		Version string `json:"version"`
+		// Href is the URI reference consumers follow to load the API Reference.
+		Href string `json:"href"`
+	}
+
 	// Reference contains the statically derived Ferret-facing API for one module version.
 	Reference struct {
 		// SchemaVersion identifies the API Reference wire contract.

@@ -4,7 +4,8 @@
 // describe the FQL parameters, return values, failures, and deprecation state
 // exposed to Ferret users. This package provides the shared API Reference v1
 // wire model and parses the structured documentation used to supply that
-// Ferret-facing metadata.
+// Ferret-facing metadata. It also defines the version-discovery index used to
+// locate immutable API Reference documents.
 //
 // ParseDocumentation accepts normalized documentation-body text. Callers that
 // inspect Go source are responsible for removing line or block comment markers
