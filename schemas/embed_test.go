@@ -101,6 +101,12 @@ func TestRegistryArtifactSchemasAreEmbedded(t *testing.T) {
 	}
 }
 
+func TestAPICatalogSchemaIsEmbedded(t *testing.T) {
+	if _, err := ferretschemas.FS.ReadFile("registry/artifact/api-catalog/v1.json"); err != nil {
+		t.Fatalf("API Catalog schema is not embedded: %v", err)
+	}
+}
+
 func compileSingle(t *testing.T, path string) *jsonschema.Schema {
 	t.Helper()
 	data, err := ferretschemas.FS.ReadFile(path)

@@ -228,6 +228,23 @@ versioning policy.
 The older registry placeholder at `/registry/v1.json` and the plugin v1 file
 remain reserved and deliberately reject every document.
 
+## API Catalog v1
+
+Standard Library documentation pairs the shared API Reference artifact with a
+presentation-only API Catalog that other API publishers can reuse:
+
+```text
+https://schemas.ferretlang.org/registry/artifact/api-catalog/v1.json
+```
+
+The `pkg/api/catalog` package provides strict JSON parsing and offline local
+validation. Catalog categories group global functions for documentation; they
+are not Ferret namespaces. Identity, version, function-membership, and
+namespace-coverage checks across the catalog and API Reference remain consumer
+responsibilities. See
+[API Catalog v1](docs/api-catalog-v1.md) for the
+contract boundary.
+
 ## Development
 
 Run the default formatting, vet, and test checks with:

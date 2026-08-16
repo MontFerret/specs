@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestBuildPagesPublishesAPIIndexSchema(t *testing.T) {
+func TestBuildPagesPublishesPortableSchemas(t *testing.T) {
 	workingDirectory, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -23,17 +23,22 @@ func TestBuildPagesPublishesAPIIndexSchema(t *testing.T) {
 		t.Fatalf("build Pages site: %v\n%s", err, output)
 	}
 
-	source, err := os.ReadFile(filepath.Join(repositoryRoot, "schemas", "registry", "artifact", "api-index", "v1.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
+	for _, relative := range []string{
+		filepath.Join("registry", "artifact", "api-index", "v1.json"),
+		filepath.Join("registry", "artifact", "api-catalog", "v1.json"),
+	} {
+		source, err := os.ReadFile(filepath.Join(repositoryRoot, "schemas", relative))
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	published, err := os.ReadFile(filepath.Join(destination, "registry", "artifact", "api-index", "v1.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
+		published, err := os.ReadFile(filepath.Join(destination, relative))
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	if !bytes.Equal(published, source) {
-		t.Fatal("published API Index schema differs from its canonical source")
+		if !bytes.Equal(published, source) {
+			t.Fatalf("published schema %s differs from its canonical source", relative)
+		}
 	}
 }

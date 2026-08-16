@@ -35,6 +35,8 @@ const (
 	ScopeRegistry Scope = "registry"
 	// ScopeRegistryArtifact identifies Registry distribution artifact validation.
 	ScopeRegistryArtifact Scope = "registry artifact"
+	// ScopeAPICatalog identifies API Catalog artifact validation.
+	ScopeAPICatalog Scope = "API catalog"
 )
 
 const (

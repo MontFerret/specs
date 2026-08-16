@@ -21,6 +21,7 @@ func TestErrorsFormatEveryScope(t *testing.T) {
 		{name: "manifest", scope: ScopeManifest, want: "manifest validation failed at /name (schema): invalid name"},
 		{name: "registry", scope: ScopeRegistry, want: "registry validation failed at /name (schema): invalid name"},
 		{name: "registry artifact", scope: ScopeRegistryArtifact, want: "registry artifact validation failed at /name (schema): invalid name"},
+		{name: "API catalog", scope: ScopeAPICatalog, want: "API catalog validation failed at /name (schema): invalid name"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := NewErrors(test.scope, []Violation{{Path: "/name", Rule: RuleSchema, Message: "invalid name"}})
