@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -98,6 +97,7 @@ func compileSchema() {
 
 	for schemaID, resourcePath := range map[string]string{
 		"https://schemas.ferretlang.org/common/identifier.json": "common/identifier.json",
+		"https://schemas.ferretlang.org/common/namespace.json":  "common/namespace.json",
 		"https://schemas.ferretlang.org/common/semver.json":     "common/semver.json",
 		SchemaV1: schemaPath,
 	} {
@@ -131,7 +131,7 @@ func compileSchema() {
 func validateSemantics(catalog *Catalog) error {
 	violations := make([]validation.Violation, 0)
 	seenCategories := make(map[string]struct{}, len(catalog.Categories))
-	seenFunctions := make(map[string]string)
+	seenFunctions := make(map[FunctionRef]string)
 
 	for categoryIndex, category := range catalog.Categories {
 		categoryPath := validation.JSONPointer("categories", strconv.Itoa(categoryIndex))
@@ -167,31 +167,39 @@ func validateSemantics(catalog *Catalog) error {
 				violations = append(violations, validation.Violation{
 					Path:    functionPath,
 					Rule:    validation.RuleDuplicate,
-					Message: fmt.Sprintf("function %q is already assigned to category %q", function, previousCategory),
+					Message: fmt.Sprintf("function %q is already assigned to category %q", qualifiedName(function), previousCategory),
 				})
 			}
 
 			seenFunctions[function] = category.ID
 
-			if functionIndex > 0 && category.Functions[functionIndex-1] >= function {
+			if functionIndex > 0 && compareFunctionRefs(category.Functions[functionIndex-1], function) >= 0 {
 				violations = append(violations, validation.Violation{
 					Path:    functionPath,
 					Rule:    validation.RuleSchema,
-					Message: "category functions must be sorted in ascending lexical order",
+					Message: "category functions must be sorted by namespace and name in ascending lexical order",
 				})
 			}
 		}
 	}
 
-	if !sort.StringsAreSorted(catalog.NamespaceRoots) {
-		violations = append(violations, validation.Violation{
-			Path:    "/namespaceRoots",
-			Rule:    validation.RuleSchema,
-			Message: "namespace roots must be sorted in ascending lexical order",
-		})
+	return validation.NewErrors(validation.ScopeAPICatalog, violations)
+}
+
+func compareFunctionRefs(left, right FunctionRef) int {
+	if compared := strings.Compare(left.Namespace, right.Namespace); compared != 0 {
+		return compared
 	}
 
-	return validation.NewErrors(validation.ScopeAPICatalog, violations)
+	return strings.Compare(left.Name, right.Name)
+}
+
+func qualifiedName(function FunctionRef) string {
+	if function.Namespace == "" {
+		return function.Name
+	}
+
+	return function.Namespace + "::" + function.Name
 }
 
 func flattenSchemaErrors(validationErr *jsonschema.ValidationError) []validation.Violation {

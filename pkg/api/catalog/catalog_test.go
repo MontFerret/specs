@@ -19,16 +19,23 @@ const validDocument = `{
       "id": "arrays",
       "title": "Arrays",
       "description": "Global functions for working with arrays.",
-      "functions": ["append", "first", "flatten"]
+      "functions": [
+        {"namespace": "", "name": "append"},
+        {"namespace": "", "name": "first"},
+        {"namespace": "", "name": "flatten"}
+      ]
     },
     {
-      "id": "math",
-      "title": "Math",
-      "description": "Mathematical and numeric global functions.",
-      "functions": ["abs", "acos"]
+      "id": "io",
+      "title": "I/O",
+      "description": "Functions for working with input and output.",
+      "functions": [
+        {"namespace": "io::fs", "name": "read"},
+        {"namespace": "io::fs", "name": "write"},
+        {"namespace": "io::net::http", "name": "get"}
+      ]
     }
-  ],
-  "namespaceRoots": ["io", "t"]
+  ]
 }`
 
 func TestParseValidCatalog(t *testing.T) {
@@ -41,7 +48,11 @@ func TestParseValidCatalog(t *testing.T) {
 		t.Fatalf("catalog identity = %s@%s", catalog.ID, catalog.Version)
 	}
 
-	if got, want := catalog.Categories[0].Functions, []string{"append", "first", "flatten"}; !reflect.DeepEqual(got, want) {
+	if got, want := catalog.Categories[0].Functions, []FunctionRef{
+		{Namespace: "", Name: "append"},
+		{Namespace: "", Name: "first"},
+		{Namespace: "", Name: "flatten"},
+	}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("array functions = %v, want %v", got, want)
 	}
 }
@@ -51,8 +62,12 @@ func TestParseNamespacedOnlyCatalog(t *testing.T) {
   "schemaVersion": 1,
   "id": "montferret/http",
   "version": "1.0.0",
-  "categories": [],
-  "namespaceRoots": ["http"]
+  "categories": [{
+    "id": "requests",
+    "title": "Requests",
+    "description": "HTTP request functions.",
+    "functions": [{"namespace": "http", "name": "get"}]
+  }]
 }`
 
 	catalog, err := Parse([]byte(document))
@@ -60,8 +75,20 @@ func TestParseNamespacedOnlyCatalog(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if len(catalog.Categories) != 0 || !reflect.DeepEqual(catalog.NamespaceRoots, []string{"http"}) {
+	if got, want := catalog.Categories[0].Functions, []FunctionRef{{Namespace: "http", Name: "get"}}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("catalog = %#v", catalog)
+	}
+}
+
+func TestParseAllowsSameFunctionNameInDifferentNamespaces(t *testing.T) {
+	document := strings.Replace(validDocument,
+		`{"namespace": "io::fs", "name": "write"}`,
+		`{"namespace": "io::net", "name": "read"}`,
+		1,
+	)
+
+	if _, err := Parse([]byte(document)); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -74,17 +101,28 @@ func TestParseRejectsInvalidDocuments(t *testing.T) {
 		{name: "malformed", data: `{`, want: "decode"},
 		{name: "trailing", data: validDocument + `{}`, want: "exactly one JSON value"},
 		{name: "duplicate key", data: strings.Replace(validDocument, `"id": "montferret/core",`, `"id": "montferret/core", "id": "montferret/core",`, 1), want: "duplicate object key"},
-		{name: "unknown root field", data: strings.Replace(validDocument, `"namespaceRoots":`, `"unknown": true, "namespaceRoots":`, 1), want: "additionalProperties"},
-		{name: "unknown category field", data: strings.Replace(validDocument, `"functions": ["append"`, `"unknown": true, "functions": ["append"`, 1), want: "additionalProperties"},
+		{name: "unknown root field", data: strings.Replace(validDocument, `"categories":`, `"unknown": true, "categories":`, 1), want: "additionalProperties"},
+		{name: "unknown category field", data: strings.Replace(validDocument, `"functions": [`, `"unknown": true, "functions": [`, 1), want: "additionalProperties"},
+		{name: "unknown function field", data: strings.Replace(validDocument, `{"namespace": "", "name": "append"}`, `{"namespace": "", "name": "append", "unknown": true}`, 1), want: "additionalProperties"},
 		{name: "invalid category id", data: strings.Replace(validDocument, `"arrays"`, `"Arrays"`, 1), want: "pattern"},
 		{name: "blank title", data: strings.Replace(validDocument, `"title": "Arrays"`, `"title": "  "`, 1), want: "pattern"},
-		{name: "invalid function", data: strings.Replace(validDocument, `"append"`, `"append-value"`, 1), want: "pattern"},
-		{name: "duplicate function in category", data: strings.Replace(validDocument, `"append", "first"`, `"append", "append", "first"`, 1), want: "uniqueItems"},
-		{name: "unsorted functions", data: strings.Replace(validDocument, `"append", "first", "flatten"`, `"first", "append", "flatten"`, 1), want: "sorted"},
-		{name: "duplicate function across categories", data: strings.Replace(validDocument, `"abs", "acos"`, `"abs", "append"`, 1), want: "already assigned"},
-		{name: "duplicate category id", data: strings.Replace(validDocument, `"id": "math"`, `"id": "arrays"`, 1), want: "duplicated"},
-		{name: "unsorted roots", data: strings.Replace(validDocument, `["io", "t"]`, `["t", "io"]`, 1), want: "namespace roots must be sorted"},
-		{name: "duplicate roots", data: strings.Replace(validDocument, `["io", "t"]`, `["io", "io"]`, 1), want: "uniqueItems"},
+		{name: "blank description", data: strings.Replace(validDocument, `"description": "Global functions for working with arrays."`, `"description": "  "`, 1), want: "pattern"},
+		{name: "missing namespace", data: strings.Replace(validDocument, `{"namespace": "", "name": "append"}`, `{"name": "append"}`, 1), want: "required"},
+		{name: "missing name", data: strings.Replace(validDocument, `{"namespace": "", "name": "append"}`, `{"namespace": ""}`, 1), want: "required"},
+		{name: "invalid namespace", data: strings.Replace(validDocument, `"namespace": "io::fs"`, `"namespace": "io:"`, 1), want: "validation failed"},
+		{name: "invalid function", data: strings.Replace(validDocument, `"name": "append"`, `"name": "append-value"`, 1), want: "pattern"},
+		{name: "duplicate function in category", data: strings.Replace(validDocument, `{"namespace": "", "name": "first"}`, `{"namespace": "", "name": "append"}`, 1), want: "uniqueItems"},
+		{name: "unsorted functions by name", data: strings.Replace(validDocument, `{"namespace": "", "name": "append"},
+        {"namespace": "", "name": "first"}`, `{"namespace": "", "name": "first"},
+        {"namespace": "", "name": "append"}`, 1), want: "sorted"},
+		{name: "unsorted functions by namespace", data: strings.Replace(validDocument, `{"namespace": "io::fs", "name": "read"},
+        {"namespace": "io::fs", "name": "write"},
+        {"namespace": "io::net::http", "name": "get"}`, `{"namespace": "io::net::http", "name": "get"},
+        {"namespace": "io::fs", "name": "read"},
+        {"namespace": "io::fs", "name": "write"}`, 1), want: "sorted"},
+		{name: "duplicate function across categories", data: strings.Replace(validDocument, `{"namespace": "io::fs", "name": "read"}`, `{"namespace": "", "name": "append"}`, 1), want: "already assigned"},
+		{name: "duplicate category id", data: strings.Replace(validDocument, `"id": "io"`, `"id": "arrays"`, 1), want: "duplicated"},
+		{name: "removed namespace roots", data: strings.Replace(validDocument, `"categories":`, `"namespaceRoots": [], "categories":`, 1), want: "additionalProperties"},
 	}
 
 	for _, test := range tests {

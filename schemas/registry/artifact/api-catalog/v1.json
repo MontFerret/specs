@@ -9,8 +9,7 @@
     "schemaVersion",
     "id",
     "version",
-    "categories",
-    "namespaceRoots"
+    "categories"
   ],
   "properties": {
     "schemaVersion": {
@@ -27,13 +26,6 @@
       "items": {
         "$ref": "#/$defs/category"
       }
-    },
-    "namespaceRoots": {
-      "type": "array",
-      "uniqueItems": true,
-      "items": {
-        "$ref": "#/$defs/ferretIdentifier"
-      }
     }
   },
   "$defs": {
@@ -49,6 +41,29 @@
       "type": "string",
       "minLength": 1,
       "pattern": ".*\\S.*"
+    },
+    "functionReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "namespace",
+        "name"
+      ],
+      "properties": {
+        "namespace": {
+          "oneOf": [
+            {
+              "const": ""
+            },
+            {
+              "$ref": "https://schemas.ferretlang.org/common/namespace.json"
+            }
+          ]
+        },
+        "name": {
+          "$ref": "#/$defs/ferretIdentifier"
+        }
+      }
     },
     "category": {
       "type": "object",
@@ -74,7 +89,7 @@
           "minItems": 1,
           "uniqueItems": true,
           "items": {
-            "$ref": "#/$defs/ferretIdentifier"
+            "$ref": "#/$defs/functionReference"
           }
         }
       }

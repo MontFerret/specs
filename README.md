@@ -238,10 +238,10 @@ https://schemas.ferretlang.org/registry/artifact/api-catalog/v1.json
 ```
 
 The `pkg/api/catalog` package provides strict JSON parsing and offline local
-validation. Catalog categories group global functions for documentation; they
-are not Ferret namespaces. Identity, version, function-membership, and
-namespace-coverage checks across the catalog and API Reference remain consumer
-responsibilities. See
+validation. Catalog categories may contain global and namespaced function
+references for documentation, but are not Ferret namespaces themselves.
+Identity, version, and function-resolution checks across the catalog and API
+Reference remain consumer responsibilities. See
 [API Catalog v1](docs/api-catalog-v1.md) for the
 contract boundary.
 
