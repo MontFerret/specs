@@ -32,11 +32,31 @@ letter or underscore, and must not be `_`. A documentation body must not repeat
 a parameter name and may contain at most one `@return` and one `@deprecated`.
 Every `@throws` annotation is retained in source order.
 
-Type and error expressions are opaque, nonblank, single-line strings. Their
-bytes inside the outer braces are preserved exactly, including spaces and
-nested braces. The parser does not define a type-expression language or AST.
+Parameter and return type expressions use this recursive grammar:
+
+```text
+Type    := Union
+Union   := Primary ("|" Primary)*
+Primary := Named | List
+List    := "[" Type "]"
+```
+
+Top-level `|` produces an ordered union and prefix `[Type]` produces a list.
+Whitespace adjacent to these operators is trimmed. Structurally identical
+union members are silently deduplicated in first-seen order; a union with one
+remaining member becomes that member. Normalization never sorts or flattens
+nested unions.
+
+Balanced legacy expressions that do not use the structured operators remain
+open named atoms. This includes `Object?`, `Any...`, `Array<T>`, `Iterator<T>`,
+and postfix `T[]`. The parser does not infer optionality, generic structure, or
+variadic behavior from those names. `@throws` expressions remain opaque,
+nonblank, single-line strings and are not parsed as types.
+
 Descriptions are required and must be nonblank. A JSDoc-style dash separator,
-such as `@param value {String} - Input.`, is invalid.
+such as `@param value {String} - Input.`, is invalid. Malformed unions, empty
+lists, and unbalanced groups are rejected with the annotation's original line
+and error mapping.
 
 Structured annotations are single-line declarations. Continuation lines and
 additional JSDoc tags are not supported.
@@ -92,7 +112,44 @@ validates serialized documents; `api.Validate` validates constructed
 `api.Reference` values. Both preserve Registry-artifact validation scope and
 structured violations from `pkg/validation`.
 
-Compatible additions to the wire contract remain schema version 1. An
-incompatible wire change requires a new schema version and schema ID. The
-structured documentation grammar may evolve independently when its normalized
-output remains representable by the current wire contract.
+API Reference v1 uses three closed recursive type variants:
+
+- `{"kind":"named","name":"String"}` is an open semantic name. Names are
+  not restricted to a Core enum, so modules may publish names such as `Page` or
+  `SQLiteConnection`.
+- `{"kind":"union","types":[...]}` is an ordered choice with at least two
+  recursively valid members.
+- `{"kind":"list","element":...}` is a list whose element is one recursively
+  valid type. A structured list is distinct from a named type such as `Array`.
+
+For example, `[Int | Float]` is emitted as:
+
+```json
+{
+  "kind": "list",
+  "element": {
+    "kind": "union",
+    "types": [
+      { "kind": "named", "name": "Int" },
+      { "kind": "named", "name": "Float" }
+    ]
+  }
+}
+```
+
+An absent parameter type remains absent; it is not rewritten to `Any`.
+Explicit `Any` is `{"kind":"named","name":"Any"}`. A documented parameter
+still requires both its type and description, and a present return requires
+both fields.
+
+Signatures describe Ferret callable shapes and remain unique by fixed arity or
+variadic registration. Types describe semantic values within a signature and
+never create overloads. The type tag is intentionally extensible, but v1
+accepts only `named`, `union`, and `list` until another kind has a concrete
+contract.
+
+This early-stage structured-type cutover intentionally retains schema version 1
+and the existing schema ID. Future incompatible wire changes require a new
+schema version and schema ID. The documentation grammar may evolve
+independently when its normalized output remains representable by the current
+wire contract.

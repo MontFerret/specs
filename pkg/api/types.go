@@ -1,5 +1,17 @@
 package api
 
+// TypeKind identifies one recursive Ferret API type variant.
+type TypeKind string
+
+const (
+	// TypeKindNamed identifies an open named Ferret semantic type.
+	TypeKindNamed TypeKind = "named"
+	// TypeKindUnion identifies an ordered choice of semantic types.
+	TypeKindUnion TypeKind = "union"
+	// TypeKindList identifies a homogeneous list of one semantic element type.
+	TypeKindList TypeKind = "list"
+)
+
 const (
 	// SchemaVersion is the supported Ferret API Reference schema version.
 	SchemaVersion = 1
@@ -15,6 +27,19 @@ const (
 )
 
 type (
+	// Type describes a recursive Ferret-facing semantic type. Exactly one
+	// variant field must be present for the selected Kind.
+	Type struct {
+		// Kind selects the named, union, or list variant.
+		Kind TypeKind `json:"kind"`
+		// Name contains the open semantic name for a named type.
+		Name string `json:"name,omitempty"`
+		// Types contains the ordered members of a union type.
+		Types []Type `json:"types,omitempty"`
+		// Element contains the recursive element of a list type.
+		Element *Type `json:"element,omitempty"`
+	}
+
 	// Index discovers immutable API Reference artifacts by version.
 	Index struct {
 		// SchemaVersion identifies the API Reference Index wire contract.
@@ -82,16 +107,17 @@ type (
 	Parameter struct {
 		// Name is the Ferret-facing parameter name.
 		Name string `json:"name"`
-		// Type is an opaque Ferret type expression preserved as authored.
-		Type string `json:"type,omitempty"`
+		// Type describes the documented Ferret semantic type. Nil means the
+		// parameter type was not documented.
+		Type *Type `json:"type,omitempty"`
 		// Description explains the parameter's Ferret-facing meaning.
 		Description string `json:"description,omitempty"`
 	}
 
 	// Return describes a documented Ferret-facing function result.
 	Return struct {
-		// Type is an opaque Ferret type expression preserved as authored.
-		Type string `json:"type"`
+		// Type describes the documented Ferret semantic result type.
+		Type *Type `json:"type"`
 		// Description explains the result's Ferret-facing meaning.
 		Description string `json:"description"`
 	}

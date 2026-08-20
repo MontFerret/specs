@@ -18,10 +18,11 @@ func ExampleParseDocumentation() {
 	}
 
 	fmt.Println(documentation.Description)
-	fmt.Println(documentation.Parameters[0].Name, documentation.Parameters[0].Type)
-	fmt.Println(documentation.Return.Type)
+	parameterType := documentation.Parameters[0].Type
+	fmt.Println(documentation.Parameters[0].Name, parameterType.Types[0].Name, parameterType.Types[1].Name)
+	fmt.Println(documentation.Return.Type.Name)
 	// Output:
 	// Decode decodes XML content into a normalized document object.
-	// data String|Binary
+	// data String Binary
 	// Object
 }

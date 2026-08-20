@@ -218,9 +218,10 @@ these portable contracts.
 
 The API Reference artifact describes each registered function signature with
 ordered Ferret-facing parameter objects. A parameter always has a name and may
-also carry a Ferret type expression and description. Signatures may include
-prose, a return value, ordered visible failures, and a deprecation message.
-Ferret type and error expressions are opaque strings rather than Go types.
+also carry a recursive Ferret semantic type and description. Named, union, and
+list variants compose without changing arity-based signature identity.
+Signatures may include prose, a return value, ordered visible failures, and a
+deprecation message. Thrown error expressions remain opaque strings.
 See [Ferret API Documentation v1](docs/api-documentation-v1.md) for the exact
 structured-comment grammar, parser behavior, error contract, and API Reference
 versioning policy.

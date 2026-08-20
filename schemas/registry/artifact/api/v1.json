@@ -147,9 +147,7 @@
           "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
         },
         "type": {
-          "type": "string",
-          "minLength": 1,
-          "pattern": "^[^\\r\\n]+$"
+          "$ref": "#/$defs/type"
         },
         "description": {
           "type": "string",
@@ -174,13 +172,83 @@
       ],
       "properties": {
         "type": {
-          "type": "string",
-          "minLength": 1,
-          "pattern": "^[^\\r\\n]+$"
+          "$ref": "#/$defs/type"
         },
         "description": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    },
+    "type": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/namedType"
+        },
+        {
+          "$ref": "#/$defs/unionType"
+        },
+        {
+          "$ref": "#/$defs/listType"
+        }
+      ]
+    },
+    "namedType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "name"
+      ],
+      "properties": {
+        "kind": {
+          "const": "named"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "allOf": [
+            {
+              "pattern": "^[^\\r\\n]+$"
+            }
+          ]
+        }
+      }
+    },
+    "unionType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "types"
+      ],
+      "properties": {
+        "kind": {
+          "const": "union"
+        },
+        "types": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/type"
+          }
+        }
+      }
+    },
+    "listType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "element"
+      ],
+      "properties": {
+        "kind": {
+          "const": "list"
+        },
+        "element": {
+          "$ref": "#/$defs/type"
         }
       }
     },

@@ -10,7 +10,25 @@ import (
 // Deprecated: use api.SchemaV1.
 const APISchemaV1 = ferretapi.SchemaV1
 
+const (
+	// APITypeKindNamed identifies an open named Ferret semantic type.
+	// Deprecated: use api.TypeKindNamed.
+	APITypeKindNamed = ferretapi.TypeKindNamed
+	// APITypeKindUnion identifies an ordered choice of semantic types.
+	// Deprecated: use api.TypeKindUnion.
+	APITypeKindUnion = ferretapi.TypeKindUnion
+	// APITypeKindList identifies a homogeneous list element type.
+	// Deprecated: use api.TypeKindList.
+	APITypeKindList = ferretapi.TypeKindList
+)
+
 type (
+	// APITypeKind identifies one recursive Ferret API type variant.
+	// Deprecated: use api.TypeKind.
+	APITypeKind = ferretapi.TypeKind
+	// APIType describes a recursive Ferret-facing semantic type.
+	// Deprecated: use api.Type.
+	APIType = ferretapi.Type
 	// APIReference is the Ferret API Reference v1 document.
 	// Deprecated: use api.Reference.
 	APIReference = ferretapi.Reference

@@ -32,10 +32,10 @@ func TestParseDocumentation(t *testing.T) {
 			want: api.Documentation{
 				Description: "Decode decodes content.\n\nThe result uses Ferret-native values.",
 				Parameters: []api.Parameter{
-					{Name: "data", Type: "String|Binary", Description: "Source content."},
-					{Name: "options", Type: "Object?", Description: "Decode options."},
+					{Name: "data", Type: unionType("String", "Binary"), Description: "Source content."},
+					{Name: "options", Type: documentationNamedType("Object?"), Description: "Decode options."},
 				},
-				Return: &api.Return{Type: "Object", Description: "Normalized document."},
+				Return: &api.Return{Type: documentationNamedType("Object"), Description: "Normalized document."},
 				Throws: []api.Throw{
 					{Error: "ParseError", Description: "Input is malformed."},
 					{Error: "LimitError", Description: "Input is too large."},
@@ -46,17 +46,17 @@ func TestParseDocumentation(t *testing.T) {
 		{
 			name: "collection type",
 			text: "@param names {Array<String>} Field names.",
-			want: api.Documentation{Parameters: []api.Parameter{{Name: "names", Type: "Array<String>", Description: "Field names."}}},
+			want: api.Documentation{Parameters: []api.Parameter{{Name: "names", Type: documentationNamedType("Array<String>"), Description: "Field names."}}},
 		},
 		{
 			name: "variadic type",
 			text: "@param values {Any...} Values to concatenate.",
-			want: api.Documentation{Parameters: []api.Parameter{{Name: "values", Type: "Any...", Description: "Values to concatenate."}}},
+			want: api.Documentation{Parameters: []api.Parameter{{Name: "values", Type: documentationNamedType("Any..."), Description: "Values to concatenate."}}},
 		},
 		{
 			name: "opaque type spacing",
 			text: "@param data { String | Binary } Source content.",
-			want: api.Documentation{Parameters: []api.Parameter{{Name: "data", Type: " String | Binary ", Description: "Source content."}}},
+			want: api.Documentation{Parameters: []api.Parameter{{Name: "data", Type: unionType("String", "Binary"), Description: "Source content."}}},
 		},
 		{
 			name: "opaque nested braces",
@@ -88,7 +88,7 @@ func TestParseDocumentation(t *testing.T) {
 			text: "Decode decodes content.\r\n\r\n@param data {Binary} Source content.",
 			want: api.Documentation{
 				Description: "Decode decodes content.",
-				Parameters:  []api.Parameter{{Name: "data", Type: "Binary", Description: "Source content."}},
+				Parameters:  []api.Parameter{{Name: "data", Type: documentationNamedType("Binary"), Description: "Source content."}},
 			},
 		},
 	} {
@@ -103,6 +103,19 @@ func TestParseDocumentation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func documentationNamedType(name string) *api.Type {
+	return &api.Type{Kind: api.TypeKindNamed, Name: name}
+}
+
+func unionType(names ...string) *api.Type {
+	members := make([]api.Type, 0, len(names))
+	for _, name := range names {
+		members = append(members, api.Type{Kind: api.TypeKindNamed, Name: name})
+	}
+
+	return &api.Type{Kind: api.TypeKindUnion, Types: members}
 }
 
 func TestParseDocumentationRejectsMalformedAnnotations(t *testing.T) {
@@ -124,6 +137,8 @@ func TestParseDocumentationRejectsMalformedAnnotations(t *testing.T) {
 		{name: "missing throws description", annotation: "@throws {ParseError}", want: "description"},
 		{name: "empty deprecated", annotation: "@deprecated", want: "expected"},
 		{name: "blank type", annotation: "@param data { } Source content.", want: "must not be blank"},
+		{name: "malformed type union", annotation: "@param data {String |} Source content.", want: "union member"},
+		{name: "unbalanced type group", annotation: "@return {Array<String} Result.", want: "unclosed delimiter"},
 		{name: "missing closing brace", annotation: "@param data {String Source content.", want: "closing brace"},
 	} {
 		t.Run(test.name, func(t *testing.T) {

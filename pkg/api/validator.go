@@ -184,14 +184,6 @@ func validateSemantics(reference *Reference) error {
 
 					seenParameters[parameter.Name] = struct{}{}
 
-					if parameter.Type != "" && strings.TrimSpace(parameter.Type) == "" {
-						violations = append(violations, validation.Violation{
-							Path:    parameterPath + "/type",
-							Rule:    validation.RuleSchema,
-							Message: "parameter type must not be blank",
-						})
-					}
-
 					if parameter.Description != "" && strings.TrimSpace(parameter.Description) == "" {
 						violations = append(violations, validation.Violation{
 							Path:    parameterPath + "/description",
@@ -210,14 +202,6 @@ func validateSemantics(reference *Reference) error {
 				}
 
 				if signature.Return != nil {
-					if strings.TrimSpace(signature.Return.Type) == "" {
-						violations = append(violations, validation.Violation{
-							Path:    signaturePath + "/return/type",
-							Rule:    validation.RuleSchema,
-							Message: "return type must not be blank",
-						})
-					}
-
 					if strings.TrimSpace(signature.Return.Description) == "" {
 						violations = append(violations, validation.Violation{
 							Path:    signaturePath + "/return/description",

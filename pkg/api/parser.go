@@ -27,5 +27,7 @@ func Parse(data []byte) (*Reference, error) {
 		return nil, err
 	}
 
+	normalizeReferenceTypes(reference)
+
 	return reference, nil
 }

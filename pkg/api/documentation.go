@@ -66,7 +66,12 @@ func ParseDocumentation(text string) (Documentation, error) {
 				return Documentation{}, err
 			}
 
-			metadata.Return = &Return{Type: value, Description: description}
+			parsedType, err := ParseType(value)
+			if err != nil {
+				return Documentation{}, invalidDocumentationType(lineNumber, line, err)
+			}
+
+			metadata.Return = &Return{Type: &parsedType, Description: description}
 		case throwsAnnotation:
 			value, description, err := parseTypedAnnotation(lineNumber, tag, line)
 			if err != nil {
@@ -130,7 +135,12 @@ func parseParameterAnnotation(lineNumber int, annotation string) (Parameter, err
 		)
 	}
 
-	return Parameter{Name: name, Type: value, Description: description}, nil
+	parsedType, err := ParseType(value)
+	if err != nil {
+		return Parameter{}, invalidDocumentationType(lineNumber, annotation, err)
+	}
+
+	return Parameter{Name: name, Type: &parsedType, Description: description}, nil
 }
 
 func parseTypedAnnotation(lineNumber int, tag, annotation string) (string, string, error) {
@@ -292,4 +302,13 @@ func documentationError(kind DocumentationErrorKind, line int, annotation, detai
 		Annotation: annotation,
 		Detail:     detail,
 	}
+}
+
+func invalidDocumentationType(line int, annotation string, err error) error {
+	return documentationError(
+		DocumentationErrorMalformedAnnotation,
+		line,
+		annotation,
+		fmt.Sprintf("invalid type expression: %s", err),
+	)
 }

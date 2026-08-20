@@ -181,7 +181,7 @@ func TestReferenceRejectsLegacySignatureShape(t *testing.T) {
 func TestReferenceRejectsIncompleteParameterDocumentation(t *testing.T) {
 	for _, mutate := range []func(*api.Parameter){
 		func(parameter *api.Parameter) { parameter.Description = "" },
-		func(parameter *api.Parameter) { parameter.Type = "" },
+		func(parameter *api.Parameter) { parameter.Type = nil },
 	} {
 		reference := validReference()
 		parameter := &reference.Namespaces[1].Functions[0].Signatures[1].Parameters[0]
@@ -200,9 +200,13 @@ func TestReferenceRejectsDuplicateParameterNames(t *testing.T) {
 func TestReferenceRejectsBlankStructuredMetadata(t *testing.T) {
 	for _, mutate := range []func(*api.Signature){
 		func(signature *api.Signature) { signature.Description = " \t" },
-		func(signature *api.Signature) { signature.Parameters[0].Type = " \t" },
+		func(signature *api.Signature) {
+			signature.Parameters[0].Type = &api.Type{Kind: api.TypeKindNamed, Name: " \t"}
+		},
 		func(signature *api.Signature) { signature.Parameters[0].Description = " \t" },
-		func(signature *api.Signature) { signature.Return.Type = " \t" },
+		func(signature *api.Signature) {
+			signature.Return.Type = &api.Type{Kind: api.TypeKindNamed, Name: " \t"}
+		},
 		func(signature *api.Signature) { signature.Return.Description = " \t" },
 		func(signature *api.Signature) { signature.Throws[0].Error = " \t" },
 		func(signature *api.Signature) { signature.Throws[0].Description = " \t" },
@@ -211,21 +215,23 @@ func TestReferenceRejectsBlankStructuredMetadata(t *testing.T) {
 		reference := validReference()
 		signature := &reference.Namespaces[1].Functions[0].Signatures[1]
 		signature.Description = "Reads archive paths."
-		signature.Return = &api.Return{Type: "Any", Description: "Archive content."}
+		signature.Return = &api.Return{Type: namedType("Any"), Description: "Archive content."}
 		mutate(signature)
-		requireRule(t, requireValidationErrors(t, api.Validate(reference)), validation.RuleSchema)
+		requireValidationErrors(t, api.Validate(reference))
 	}
 }
 
 func TestReferenceRejectsMultilineTypeExpressions(t *testing.T) {
 	for _, mutate := range []func(*api.Signature){
-		func(signature *api.Signature) { signature.Parameters[0].Type = "String\nBinary" },
-		func(signature *api.Signature) { signature.Return.Type = "String\rBinary" },
+		func(signature *api.Signature) {
+			signature.Parameters[0].Type = namedType("String\nBinary")
+		},
+		func(signature *api.Signature) { signature.Return.Type = namedType("String\rBinary") },
 		func(signature *api.Signature) { signature.Throws[0].Error = "Parse\nError" },
 	} {
 		reference := validReference()
 		signature := &reference.Namespaces[1].Functions[0].Signatures[1]
-		signature.Return = &api.Return{Type: "Any", Description: "Archive content."}
+		signature.Return = &api.Return{Type: namedType("Any"), Description: "Archive content."}
 		mutate(signature)
 		requireRule(t, requireValidationErrors(t, api.Validate(reference)), validation.RulePattern)
 	}
@@ -339,7 +345,7 @@ func validReference() *api.Reference {
 						Parameters:  []api.Parameter{},
 						Description: "Version returns the archive module version.",
 						Return: &api.Return{
-							Type:        "String",
+							Type:        namedType("String"),
 							Description: "Current module version.",
 						},
 					}},
@@ -354,7 +360,7 @@ func validReference() *api.Reference {
 						{
 							Parameters: []api.Parameter{{
 								Name:        "paths",
-								Type:        "String...",
+								Type:        namedType("String..."),
 								Description: "Archive paths.",
 							}},
 							Variadic:   true,
@@ -366,6 +372,10 @@ func validReference() *api.Reference {
 			},
 		},
 	}
+}
+
+func namedType(name string) *api.Type {
+	return &api.Type{Kind: api.TypeKindNamed, Name: name}
 }
 
 func requireValidationErrors(t *testing.T, err error) []validation.Violation {

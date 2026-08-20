@@ -421,7 +421,7 @@ func validAPIReference() *artifact.APIReference {
 						Parameters:  []artifact.APIParameter{},
 						Description: "Version returns the archive module version.",
 						Return: &artifact.APIReturn{
-							Type:        "String",
+							Type:        &artifact.APIType{Kind: artifact.APITypeKindNamed, Name: "String"},
 							Description: "Current module version.",
 						},
 					}},
@@ -436,7 +436,7 @@ func validAPIReference() *artifact.APIReference {
 						{
 							Parameters: []artifact.APIParameter{{
 								Name:        "paths",
-								Type:        "String...",
+								Type:        &artifact.APIType{Kind: artifact.APITypeKindNamed, Name: "String..."},
 								Description: "Archive paths.",
 							}},
 							Variadic:   true,
